@@ -1,6 +1,6 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
-  "name": "commenter",
+  "name": "zli-caze",
   "compatibility_date": "2025-04-04",
   "main": "./src/workers/app.ts",
   "compatibility_flags": ["nodejs_compat"],

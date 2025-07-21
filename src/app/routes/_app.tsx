@@ -15,7 +15,7 @@ export default () => {
             <div className="flex justify-between h-16 items-center">
               <Link to={href("/")} className="flex items-center gap-4">
                 <Logo className="h-8 text-brand-primary" />
-                <span className="text-3xl font-bold">Commenter</span>
+                <span className="text-3xl font-bold">Caze (beta)</span>
               </Link>
               <Button
                 asChild
