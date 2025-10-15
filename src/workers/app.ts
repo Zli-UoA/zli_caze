@@ -33,29 +33,36 @@ export class Room extends Server {
         break;
       }
       case "transaction": {
-        if (partyMessage.data.mutations != null) {
-          for (const mutation of partyMessage.data.mutations) {
-            switch (mutation.type) {
-              case "insert":
-              case "update": {
-                await this.ctx.storage.put(
-                  `${roomId}:${mutation.data.id}`,
-                  mutation.data,
-                );
-                break;
-              }
+        const mutations = partyMessage.data.mutations;
 
-              case "delete": {
-                await this.ctx.storage.delete(`${roomId}:${mutation.data.id}`);
-                break;
-              }
+        for (const mutation of mutations) {
+          switch (mutation.type) {
+            case "insert":
+            case "update": {
+              mutation.data = {
+                ...mutation.data,
+                isOptimistic: false,
+              };
 
-              default: {
-                const _exhaustiveCheck: never = mutation.type;
-              }
+              await this.ctx.storage.put(
+                `${roomId}:${mutation.data.id}`,
+                mutation.data,
+              );
+              break;
+            }
+
+            case "delete": {
+              await this.ctx.storage.delete(`${roomId}:${mutation.data.id}`);
+              break;
+            }
+
+            default: {
+              const _exhaustiveCheck: never = mutation.type;
             }
           }
         }
+
+        partyMessage.data.mutations = mutations;
 
         this.broadcast(JSON.stringify(partyMessage.data));
 

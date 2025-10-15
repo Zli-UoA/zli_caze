@@ -44,6 +44,7 @@ export default ({ loaderData }: Route.ComponentProps) => {
       createdAt: new Date().toISOString(),
       content: commentInput,
       user: username,
+      isOptimistic: true,
     } satisfies schema.Comment;
 
     loaderData.commentsCollection.insert(comment);
@@ -86,7 +87,7 @@ export default ({ loaderData }: Route.ComponentProps) => {
         )}
         {comments.map((comment) => (
           <div key={comment.id}>
-            <Card>
+            <Card className={comment.isOptimistic ? "opacity-50" : ""}>
               <CardContent>
                 <div className="flex">
                   <div>{comment.content}</div>

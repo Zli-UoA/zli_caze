@@ -5,5 +5,6 @@ export const comment = z.object({
   createdAt: z.iso.datetime(),
   content: z.string().max(100),
   user: z.string().max(100),
+  isOptimistic: z.boolean(),
 });
 export type Comment = z.infer<typeof comment>;
