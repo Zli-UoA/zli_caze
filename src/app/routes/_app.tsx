@@ -1,11 +1,11 @@
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
-import { UsernameDialog, useUsername } from "@/lib/username";
+import { UsernameDialog, useUsername } from "@/lib/username.client";
 import { Settings } from "lucide-react";
 import { Link, Outlet, href } from "react-router";
 
 export default () => {
-  const { setUsername } = useUsername();
+  const { setIsOpenDialog } = useUsername();
 
   return (
     <>
@@ -21,9 +21,7 @@ export default () => {
                 asChild
                 variant="secondary"
                 size="icon"
-                onClick={() => {
-                  setUsername("");
-                }}
+                onClick={() => setIsOpenDialog(true)}
               >
                 <Settings />
               </Button>
