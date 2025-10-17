@@ -1,4 +1,4 @@
-import { configCollection } from "@/components/collections/config";
+import type { ConfigCollection } from "@/components/collections/config";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -29,7 +29,7 @@ export const UsernameDialogContextProvider = ({
   );
 };
 
-export const useUsername = () => {
+export const useUsername = (configCollection: ConfigCollection) => {
   const { data: config } = useLiveQuery((q) =>
     q
       .from({ config: configCollection })
@@ -43,12 +43,14 @@ export const useUsername = () => {
   return { username, setIsOpenDialog, isOpenDialog };
 };
 
-export const UsernameDialog = () => {
+export const UsernameDialog = ({
+  configCollection,
+}: { configCollection: ConfigCollection }) => {
   const {
     username: currentUsername,
     setIsOpenDialog,
     isOpenDialog,
-  } = useUsername();
+  } = useUsername(configCollection);
 
   const [inputUsername, setInputUsername] = useState(currentUsername ?? "");
 

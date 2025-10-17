@@ -3,24 +3,28 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useUsername } from "@/lib/username.client";
+import { useUsername } from "@/lib/username";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useState } from "react";
 import type * as schema from "../../schema/message";
 import type { Route } from "./+types/_app.room.$roomId";
+import { createConfigCollection } from "@/components/collections/config";
 
 export const clientLoader = async ({ params }: Route.LoaderArgs) => {
   const roomId = params.roomId;
 
   const commentsCollection = createCommentsCollection(roomId);
+  const configCollection = createConfigCollection();
 
-  return { roomId, commentsCollection };
+  return { roomId, commentsCollection, configCollection };
 };
 
 export default ({ loaderData }: Route.ComponentProps) => {
   const [commentInput, setCommentInput] = useState("");
 
-  const { username, setIsOpenDialog } = useUsername();
+  const { username, setIsOpenDialog } = useUsername(
+    loaderData.configCollection,
+  );
 
   const { data: comments, isLoading } = useLiveQuery((q) =>
     q

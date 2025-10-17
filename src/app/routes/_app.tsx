@@ -1,11 +1,25 @@
+import {
+  createConfigCollection,
+  type ConfigCollection,
+} from "@/components/collections/config";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
-import { UsernameDialog, useUsername } from "@/lib/username.client";
+import {
+  UsernameDialog,
+  UsernameDialogContextProvider,
+  useUsername,
+} from "@/lib/username";
 import { Settings } from "lucide-react";
 import { Link, Outlet, href } from "react-router";
+import type { Route } from "./+types/_app";
+export const clientLoader = async ({ params }: Route.LoaderArgs) => {
+  const configCollection = createConfigCollection();
 
-export default () => {
-  const { setIsOpenDialog } = useUsername();
+  return { configCollection };
+};
+
+const App = ({ configCollection }: { configCollection: ConfigCollection }) => {
+  const { setIsOpenDialog } = useUsername(configCollection);
 
   return (
     <>
@@ -30,7 +44,15 @@ export default () => {
         </header>
         <Outlet />
       </div>
-      <UsernameDialog />
+      <UsernameDialog configCollection={configCollection} />
     </>
+  );
+};
+
+export default ({ loaderData }: Route.ComponentProps) => {
+  return (
+    <UsernameDialogContextProvider>
+      <App configCollection={loaderData.configCollection} />
+    </UsernameDialogContextProvider>
   );
 };
