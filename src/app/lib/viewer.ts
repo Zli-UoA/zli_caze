@@ -4,6 +4,7 @@ class Message {
   y: number;
   width: number;
   time: number;
+  lineWidth: number;
 
   constructor(
     value: string,
@@ -11,12 +12,14 @@ class Message {
     y: number,
     width: number,
     time: number,
+    lineWidth: number,
   ) {
     this.value = value;
     this.x = x;
     this.y = y;
     this.width = width;
     this.time = time;
+    this.lineWidth = lineWidth;
   }
 
   isFinished() {
@@ -41,7 +44,7 @@ class Message {
 
     ctx.save();
     ctx.strokeStyle = "white";
-    ctx.lineWidth = 15;
+    ctx.lineWidth = this.lineWidth;
     ctx.strokeText(this.value, this.x, y);
     ctx.restore();
 
@@ -85,12 +88,14 @@ class AnimationController {
 
 type Config = {
   fontSize: number;
+  lineWidth: number;
   backgroundColor: string;
   speed: number /* 何秒で通過するか */;
 };
 
 const defaultConfig: Config = {
   fontSize: 120,
+  lineWidth: 15,
   backgroundColor: "green",
   speed: 8,
 };
@@ -159,6 +164,7 @@ class Viewer {
         this.calcNextY(),
         messageWidth,
         this.config.speed,
+        this.config.lineWidth,
       ),
     );
   }

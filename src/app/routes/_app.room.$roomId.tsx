@@ -1,48 +1,58 @@
+import { createCommentsCollection } from "@/components/collections/comments";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useUsername } from "@/lib/username";
-import usePartySocket from "partysocket/react";
+import { useLiveQuery } from "@tanstack/react-db";
 import { useState } from "react";
-import * as schema from "../../schema/message";
+import type * as schema from "../../schema/message";
 import type { Route } from "./+types/_app.room.$roomId";
+import { createConfigCollection } from "@/components/collections/config";
 
-export const loader = async ({ params, context }: Route.LoaderArgs) => {
+export const clientLoader = async ({ params }: Route.LoaderArgs) => {
   const roomId = params.roomId;
 
-  const id = context.cloudflare.env.ROOM.idFromName(roomId);
-  const room = context.cloudflare.env.ROOM.get(id);
-  const comments = await room.getComments(roomId);
+  const commentsCollection = createCommentsCollection(roomId);
+  const configCollection = createConfigCollection();
 
-  return { roomId: params.roomId, comments };
+  return { roomId, commentsCollection, configCollection };
 };
 
 export default ({ loaderData }: Route.ComponentProps) => {
-  const [comments, setComments] = useState<schema.CommentWithId[]>(
-    loaderData.comments,
-  );
   const [commentInput, setCommentInput] = useState("");
 
-  const { username } = useUsername();
+  const { username, setIsOpenDialog } = useUsername(
+    loaderData.configCollection,
+  );
 
-  const ws = usePartySocket({
-    party: "room",
-    room: loaderData.roomId,
-    onMessage(e) {
-      const comment = schema.commentWithId.safeParse(JSON.parse(e.data));
-      if (comment.data == null) return;
-
-      setComments([comment.data, ...comments]);
-    },
-  });
+  const { data: comments, isLoading } = useLiveQuery((q) =>
+    q
+      .from({ comment: loaderData.commentsCollection })
+      .fn.select(({ comment }) => ({
+        ...comment,
+        createdAt: new Date(comment.createdAt),
+      }))
+      .orderBy(({ comment }) => comment.createdAt, "desc"),
+  );
 
   const sendComment = () => {
+    if (username == null) {
+      setIsOpenDialog(true);
+      return;
+    }
+
     if (commentInput === "") return;
     const comment = {
+      id: crypto.randomUUID(),
+      createdAt: new Date().toISOString(),
       content: commentInput,
       user: username,
+      isOptimistic: true,
     } satisfies schema.Comment;
-    ws.send(JSON.stringify(comment));
+
+    loaderData.commentsCollection.insert(comment);
+
     setCommentInput("");
   };
 
@@ -72,16 +82,26 @@ export default ({ loaderData }: Route.ComponentProps) => {
         </CardContent>
       </Card>
       <div className="flex flex-col gap-4">
+        {isLoading && (
+          <>
+            <Skeleton className="h-[74px] mb-[24px] rounded-xl bg-card" />
+            <Skeleton className="h-[74px] mb-[24px] rounded-xl bg-card" />
+            <Skeleton className="h-[74px] mb-[24px] rounded-xl bg-card" />
+          </>
+        )}
         {comments.map((comment) => (
           <div key={comment.id}>
-            <Card>
+            <Card className={comment.isOptimistic ? "opacity-50" : ""}>
               <CardContent>
                 <div className="flex">
                   <div>{comment.content}</div>
                 </div>
               </CardContent>
             </Card>
-            <div className="flex justify-end">{comment.user}</div>
+            <div className="flex justify-between">
+              <div>{comment.createdAt.toLocaleTimeString()}</div>
+              <div>{comment.user}</div>
+            </div>
           </div>
         ))}
       </div>

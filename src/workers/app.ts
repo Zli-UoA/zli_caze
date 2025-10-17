@@ -1,3 +1,4 @@
+import { type PartyMessage, partyMessageSchema } from "@/lib/partyCollection";
 import {
   type Connection,
   Server,
@@ -5,36 +6,91 @@ import {
   routePartykitRequest,
 } from "partyserver";
 import { createRequestHandler } from "react-router";
-import { decodeTime, ulid } from "ulid";
 import * as schema from "../schema/message";
 
 export class Room extends Server {
   static options = { hibernate: true };
   async onMessage(connection: Connection, message: WSMessage) {
     if (typeof message !== "string") return;
-    const comment = schema.comment.safeParse(JSON.parse(message));
+    const partyMessage = partyMessageSchema(schema.comment).safeParse(
+      JSON.parse(message),
+    );
 
-    if (comment.data == null) return;
-    const commentWithId = {
-      ...comment.data,
-      id: ulid(),
-    } satisfies schema.CommentWithId;
-
-    this.broadcast(JSON.stringify(commentWithId));
+    if (!partyMessage.success) {
+      return;
+    }
 
     const roomId = connection.server;
-    await this.ctx.storage.put(`${roomId}:${commentWithId.id}`, commentWithId);
+
+    switch (partyMessage.data.type) {
+      case "sync": {
+        connection.send(
+          JSON.stringify({
+            type: "sync",
+            data: await this.getComments(roomId),
+          } satisfies Extract<PartyMessage<schema.Comment>, { type: "sync" }>),
+        );
+        break;
+      }
+      case "transaction": {
+        const mutations = partyMessage.data.mutations;
+
+        for (const mutation of mutations) {
+          switch (mutation.type) {
+            case "insert":
+            case "update": {
+              mutation.data = {
+                ...mutation.data,
+                isOptimistic: false,
+                createdAt: new Date().toISOString(),
+              };
+
+              await this.ctx.storage.put(
+                `${roomId}:${mutation.data.id}`,
+                mutation.data,
+              );
+              break;
+            }
+
+            case "delete": {
+              await this.ctx.storage.delete(`${roomId}:${mutation.data.id}`);
+              break;
+            }
+
+            default: {
+              const _exhaustiveCheck: never = mutation.type;
+            }
+          }
+        }
+
+        partyMessage.data.mutations = mutations;
+
+        this.broadcast(JSON.stringify(partyMessage.data));
+
+        connection.send(
+          JSON.stringify({
+            type: "ack",
+            transactionId: partyMessage.data.transactionId,
+            id: crypto.randomUUID(),
+          } satisfies Extract<PartyMessage<schema.Comment>, { type: "ack" }>),
+        );
+        break;
+      }
+      case "ack": {
+        break;
+      }
+      default: {
+        const _exhaustiveCheck: never = partyMessage.data;
+      }
+    }
   }
   async getComments(roomId: string) {
-    const commentMap = await this.ctx.storage.list<schema.CommentWithId>({
+    const commentMap = await this.ctx.storage.list<schema.Comment>({
       prefix: roomId,
     });
 
-    const comment = [...commentMap.values()].sort(
-      (a, b) => decodeTime(b.id) - decodeTime(a.id),
-    );
-
-    return comment;
+    const comments = [...commentMap.values()];
+    return comments;
   }
 }
 

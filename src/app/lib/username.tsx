@@ -1,70 +1,84 @@
+import type { ConfigCollection } from "@/components/collections/config";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { useState, useSyncExternalStore } from "react";
+import { eq, useLiveQuery } from "@tanstack/react-db";
+import { type ReactNode, createContext, useContext, useState } from "react";
 
-const subscribe = (callback: () => void) => {
-  const onStorage = (e: StorageEvent) => {
-    if (e.key !== "username") return;
-    callback();
-  };
-  window.addEventListener("storage", onStorage);
+const UsernameDialogSetIsOpenContext = createContext((isOpen: boolean) => {});
+const UsernameDialogIsOpenContext = createContext(false);
 
-  return () => {
-    window.removeEventListener("storage", onStorage);
-  };
-};
+export const UsernameDialogContextProvider = ({
+  children,
+}: { children: ReactNode }) => {
+  const [isOpen, setIsOpen] = useState(false);
 
-const getSnapshot = () => {
-  return localStorage.getItem("username") ?? "";
-};
-
-const getServerSnapshot = () => {
-  return "Zli太郎";
-};
-
-const setUsername = (username: string) => {
-  localStorage.setItem("username", username.trim());
-  window.dispatchEvent(new StorageEvent("storage", { key: "username" }));
-};
-
-export const useUsername = () => {
-  const username = useSyncExternalStore(
-    subscribe,
-    getSnapshot,
-    getServerSnapshot,
+  return (
+    <UsernameDialogSetIsOpenContext value={setIsOpen}>
+      <UsernameDialogIsOpenContext value={isOpen}>
+        {children}
+      </UsernameDialogIsOpenContext>
+    </UsernameDialogSetIsOpenContext>
   );
-
-  return { username, setUsername };
 };
 
-export const UsernameDialog = () => {
-  const { username: storedUsername, setUsername: setStoredUsername } =
-    useUsername();
-  const [inputUsername, setInputUsername] = useState("");
+export const useUsername = (configCollection: ConfigCollection) => {
+  const { data: config } = useLiveQuery((q) =>
+    q
+      .from({ config: configCollection })
+      .where(({ config }) => eq(config.key, "username")),
+  );
+  const username = config.find((c) => c.key === "username")?.value;
 
-  const isOpen = storedUsername === "";
+  const setIsOpenDialog = useContext(UsernameDialogSetIsOpenContext);
+  const isOpenDialog = useContext(UsernameDialogIsOpenContext);
+
+  return { username, setIsOpenDialog, isOpenDialog };
+};
+
+export const UsernameDialog = ({
+  configCollection,
+}: { configCollection: ConfigCollection }) => {
+  const {
+    username: currentUsername,
+    setIsOpenDialog,
+    isOpenDialog,
+  } = useUsername(configCollection);
+
+  const [inputUsername, setInputUsername] = useState(currentUsername ?? "");
 
   const saveUsername = (username: string) => {
-    if (username.trim() === "") return;
-    setUsername(username);
+    const trimmedUsername = username.trim();
+    if (trimmedUsername === "") return;
+
+    if (currentUsername == null) {
+      configCollection.insert({ key: "username", value: trimmedUsername });
+    } else {
+      configCollection.update("username", (draft) => {
+        draft.value = trimmedUsername;
+      });
+    }
+
+    setIsOpenDialog(false);
   };
 
   return (
-    <Dialog open={isOpen}>
+    <Dialog open={isOpenDialog} onOpenChange={setIsOpenDialog}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>ユーザー名を設定する</DialogTitle>
+          <DialogTitle>ユーザー名を設定</DialogTitle>
+          <DialogDescription>
+            ユーザー名を入力してください(現在のユーザー名: {currentUsername})
+          </DialogDescription>
         </DialogHeader>
         <Input
-          type="text"
-          autoFocus={true}
           value={inputUsername}
           onChange={(e) => setInputUsername(e.target.value)}
           onKeyDown={(e) => {
@@ -73,14 +87,7 @@ export const UsernameDialog = () => {
           }}
         />
         <DialogFooter>
-          <Button
-            type="button"
-            onClick={() => {
-              saveUsername(inputUsername);
-            }}
-          >
-            保存
-          </Button>
+          <Button onClick={() => saveUsername(inputUsername)}>保存</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>
