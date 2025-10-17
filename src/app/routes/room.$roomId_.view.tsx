@@ -1,9 +1,9 @@
-import { Viewer } from "@/lib/viewer";
-import { useEffect, useRef } from "react";
-import type { Route } from "./+types/_app.room.$roomId";
-import { useLiveQuery } from "@tanstack/react-db";
 import { createCommentsCollection } from "@/components/collections/comments";
+import { Viewer } from "@/lib/viewer";
+import { useLiveQuery } from "@tanstack/react-db";
+import { useEffect, useRef } from "react";
 import { useSearchParams } from "react-router";
+import type { Route } from "./+types/_app.room.$roomId";
 
 export const clientLoader = async ({ params }: Route.LoaderArgs) => {
   const roomId = params.roomId;
