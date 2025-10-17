@@ -42,6 +42,7 @@ export class Room extends Server {
               mutation.data = {
                 ...mutation.data,
                 isOptimistic: false,
+                createdAt: new Date().toISOString(),
               };
 
               await this.ctx.storage.put(
