@@ -3,6 +3,7 @@ import { useEffect, useRef } from "react";
 import type { Route } from "./+types/_app.room.$roomId";
 import { useLiveQuery } from "@tanstack/react-db";
 import { createCommentsCollection } from "@/components/collections/comments";
+import { useSearchParams } from "react-router";
 
 export const clientLoader = async ({ params }: Route.LoaderArgs) => {
   const roomId = params.roomId;
@@ -13,6 +14,10 @@ export const clientLoader = async ({ params }: Route.LoaderArgs) => {
 };
 
 export default ({ loaderData }: Route.ComponentProps) => {
+  const [searchParams, _setSearchParams] = useSearchParams();
+  const fontSize = searchParams.get("fontSize");
+  const lineWidth = searchParams.get("lineWidth");
+
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const viewRef = useRef<Viewer | null>(null);
   const commentsRef = useRef<Set<string>>(new Set());
@@ -31,10 +36,13 @@ export default ({ loaderData }: Route.ComponentProps) => {
     const canvas = canvasRef.current;
     if (canvas == null) return;
 
-    const viewer = new Viewer(canvas);
+    const viewer = new Viewer(canvas, {
+      ...(fontSize != null ? { fontSize: Number(fontSize) } : {}),
+      ...(lineWidth != null ? { lineWidth: Number(lineWidth) } : {}),
+    });
     viewRef.current = viewer;
     viewer.start();
-  }, []);
+  }, [fontSize, lineWidth]);
 
   useEffect(() => {
     if (viewRef.current == null) return;
