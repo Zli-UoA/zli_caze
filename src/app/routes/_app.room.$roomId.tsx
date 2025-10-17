@@ -1,4 +1,8 @@
 import { createCommentsCollection } from "@/components/collections/comments";
+import {
+  type ConfigCollection,
+  createConfigCollection,
+} from "@/components/collections/config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,13 +10,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useUsername } from "@/lib/username";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useState } from "react";
+import { useOutletContext } from "react-router";
 import type * as schema from "../../schema/message";
 import type { Route } from "./+types/_app.room.$roomId";
-import {
-  type ConfigCollection,
-  createConfigCollection,
-} from "@/components/collections/config";
-import { useOutletContext } from "react-router";
 
 export const clientLoader = async ({ params }: Route.LoaderArgs) => {
   const roomId = params.roomId;
