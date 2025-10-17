@@ -8,7 +8,11 @@ import { useLiveQuery } from "@tanstack/react-db";
 import { useState } from "react";
 import type * as schema from "../../schema/message";
 import type { Route } from "./+types/_app.room.$roomId";
-import { createConfigCollection } from "@/components/collections/config";
+import {
+  type ConfigCollection,
+  createConfigCollection,
+} from "@/components/collections/config";
+import { useOutletContext } from "react-router";
 
 export const clientLoader = async ({ params }: Route.LoaderArgs) => {
   const roomId = params.roomId;
@@ -20,11 +24,10 @@ export const clientLoader = async ({ params }: Route.LoaderArgs) => {
 };
 
 export default ({ loaderData }: Route.ComponentProps) => {
-  const [commentInput, setCommentInput] = useState("");
+  const configCollection = useOutletContext<ConfigCollection>();
+  const { username, setIsOpenDialog } = useUsername(configCollection);
 
-  const { username, setIsOpenDialog } = useUsername(
-    loaderData.configCollection,
-  );
+  const [commentInput, setCommentInput] = useState("");
 
   const { data: comments, isLoading } = useLiveQuery((q) =>
     q

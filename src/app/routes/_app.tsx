@@ -42,7 +42,7 @@ const App = ({ configCollection }: { configCollection: ConfigCollection }) => {
             </div>
           </div>
         </header>
-        <Outlet />
+        <Outlet context={configCollection} />
       </div>
       <UsernameDialog configCollection={configCollection} />
     </>
