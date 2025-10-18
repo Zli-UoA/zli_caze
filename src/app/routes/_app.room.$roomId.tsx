@@ -75,12 +75,15 @@ export default ({ loaderData }: Route.ComponentProps) => {
               value={commentInput}
               onChange={(e) => setCommentInput(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") {
+                if (e.key === "Enter" && e.ctrlKey) {
                   sendComment();
                 }
               }}
             />
             <Button onClick={sendComment}>送信</Button>
+          </div>
+          <div className="flex justify-end text-sm text-muted-foreground">
+            Ctrl + Enter で送信
           </div>
         </CardContent>
       </Card>
