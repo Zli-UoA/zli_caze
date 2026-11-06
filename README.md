@@ -27,16 +27,19 @@ Your application will be available at `http://localhost:5173`.
 ```bash
 pnpm run typecheck   # tsc --noEmit
 vp check              # Oxfmt + Oxlint (type-aware)
-vp test               # Vitest (node environment, src/**/*.test.{ts,tsx})
+vp test               # Vitest (src, durable-objects, pages tests)
 vp build              # Void production build
 ```
 
 ## Preview / Deploy
 
+Phase 2 is verified with local dev and preview. Do **not** deploy it to the existing production Worker yet: the Durable Object class and storage keys change, and Void cannot hand off an existing Worker that exports stateful classes.
+
 ```bash
 pnpm run preview     # vp build && vp preview
-pnpm run deploy      # void deploy --platform cloudflare --atomic
 ```
+
+To try Phase 2 on Cloudflare, deploy it as a separate Worker first (for example set `cloudflare.name` to `zli-caze-void` in `void.config.ts`) and keep the existing Worker untouched. Phase 3 replaces the Durable Object with Durable Streams; its deployment runbook will handle the production cutover.
 
 ## Notes
 
@@ -44,5 +47,6 @@ pnpm run deploy      # void deploy --platform cloudflare --atomic
 - `void prepare` generates `.void/` types. `.void/` and `.cloudflare/` are gitignored.
 - Pages live in `pages/`, API routes in `routes/`, and Durable Objects in `durable-objects/`.
 - PartyKit-compatible WebSocket traffic is served at `/parties/room/:roomId`.
-- Phase 2 renames the Durable Object class from `Room` to `RoomDurableObject`, so comments stored by the old class are not visible after the first Void deploy. Beta data loss is accepted; the deploy should be run with `--atomic`.
-- For an existing Worker, link it once with Void (restoring its `wrangler.jsonc` if needed) before running the atomic deploy, and commit the updated `void.lock.json`.
+- Phase 2 renames the Durable Object class from `Room` to `RoomDurableObject`. Old comments are stored under the old class and are not visible to the new class; they may be permanently removed when the old Worker/class is cleaned up. No data migration is included.
+- Because the old Worker exports the stateful `Room` class, Void cannot link it while adding `RoomDurableObject`. Any eventual production replacement must either delete/replace the old Worker once its data is exported, or deploy under a new Worker name.
+- For a same-name replacement, export any needed comment data first. Atomic deploys cross a Durable Object migration boundary and cannot be rolled back across it.

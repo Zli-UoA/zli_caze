@@ -23,9 +23,6 @@ export default defineConfig({
       },
     ],
   },
-  deploy: {
-    cloudflare: { mode: "atomic" },
-  },
   cloudflare: {
     name: "zli-caze",
     compatibility_date: "2026-02-24",

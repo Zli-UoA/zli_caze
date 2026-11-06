@@ -11,7 +11,11 @@
 # Environment
 .env
 .env.*
+.dev.vars*
 !.env.example
+
+# Wrangler/miniflare artifacts
+.mf
 
 # Miniflare state
 /.wrangler/

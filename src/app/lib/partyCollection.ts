@@ -83,7 +83,12 @@ export const partyCollectionOptions = <
     };
 
     ws.onmessage = (event) => {
-      const message: PartyMessage<InferSchemaOutput<TSchema>> = JSON.parse(event.data);
+      let message: PartyMessage<InferSchemaOutput<TSchema>>;
+      try {
+        message = JSON.parse(event.data);
+      } catch {
+        return;
+      }
 
       switch (message.type) {
         case "sync": {

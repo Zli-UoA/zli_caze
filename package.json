@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "vp build",
-    "deploy": "void deploy --platform cloudflare --atomic",
+    "deploy": "void deploy --platform cloudflare",
     "dev": "vp dev",
     "preview": "pnpm run build && vp preview",
     "typecheck": "tsc --noEmit",
