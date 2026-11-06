@@ -20,9 +20,6 @@ importers:
 
   .:
     dependencies:
-      '@durable-streams/client':
-        specifier: 0.2.7
-        version: 0.2.7
       '@durable-streams/server-cloudflare':
         specifier: 0.1.1
         version: 0.1.1

@@ -16,6 +16,8 @@ import { useRef, useState } from "react";
 const validate = (input: HTMLInputElement) => {
   if (input.validity.valueMissing) {
     input.setCustomValidity("部屋IDを入力してください");
+  } else if (!/^[A-Za-z0-9_-]{1,64}$/.test(input.value)) {
+    input.setCustomValidity("部屋IDは英数字・_・-の1〜64文字で入力してください");
   } else {
     input.setCustomValidity("");
   }
@@ -55,6 +57,9 @@ export default function IndexPage() {
             type="text"
             id="roomId"
             autoComplete="off"
+            pattern="[A-Za-z0-9_-]{1,64}"
+            minLength={1}
+            maxLength={64}
             value={roomId}
             onChange={(e) => {
               setRoomId(e.target.value);

@@ -23,13 +23,25 @@ export default function RoomViewPage({ roomId }: Props) {
   const commentsCollection = commentsDB.collections.comments;
 
   useEffect(() => {
-    void preloadCommentsDB(commentsDB);
-    return () => commentsDB.close();
+    let cancelled = false;
+    commentsRef.current.clear();
+    preloadCommentsDB(commentsDB).catch((reason: unknown) => {
+      console.error(reason);
+      if (!cancelled) {
+        // The canvas stays empty until the next navigation/reload.
+      }
+    });
+    return () => {
+      cancelled = true;
+      commentsDB.close();
+    };
   }, [commentsDB]);
 
-  const { data: rawComments } = useLiveQuery((q) =>
-    q.from({ comment: commentsCollection }).orderBy(({ comment }) => comment.createdAt, "desc"),
-  );
+  const { data: rawComments } = useLiveQuery({
+    query: (q) =>
+      q.from({ comment: commentsCollection }).orderBy(({ comment }) => comment.createdAt, "desc"),
+    queryKey: ["comments", effectiveRoomId],
+  });
   const comments = rawComments.map((comment) => ({
     ...comment,
     createdAt: new Date(comment.createdAt),

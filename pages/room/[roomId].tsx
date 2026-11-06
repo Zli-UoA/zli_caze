@@ -16,30 +16,47 @@ export default function RoomPage({ roomId }: Props) {
   const effectiveRoomId = roomId;
 
   const [commentInput, setCommentInput] = useState("");
+  const [isReady, setIsReady] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const commentsDB = useMemo(() => createCommentsDB(effectiveRoomId), [effectiveRoomId]);
   const commentsCollection = commentsDB.collections.comments;
 
   useEffect(() => {
-    void preloadCommentsDB(commentsDB);
-    return () => commentsDB.close();
+    let cancelled = false;
+    setIsReady(false);
+    setError(null);
+    preloadCommentsDB(commentsDB)
+      .then(() => {
+        if (!cancelled) setIsReady(true);
+      })
+      .catch((reason: unknown) => {
+        console.error(reason);
+        if (!cancelled) setError("コメントの読み込みに失敗しました");
+      });
+    return () => {
+      cancelled = true;
+      commentsDB.close();
+    };
   }, [commentsDB]);
 
-  const { data: rawComments, isLoading } = useLiveQuery((q) =>
-    q.from({ comment: commentsCollection }).orderBy(({ comment }) => comment.createdAt, "desc"),
-  );
+  const { data: rawComments, isLoading } = useLiveQuery({
+    query: (q) =>
+      q.from({ comment: commentsCollection }).orderBy(({ comment }) => comment.createdAt, "desc"),
+    queryKey: ["comments", effectiveRoomId],
+  });
   const comments = rawComments.map((comment) => ({
     ...comment,
     createdAt: new Date(comment.createdAt),
   }));
 
-  const sendComment = () => {
+  const sendComment = async () => {
     if (username == null) {
       setIsOpenDialog(true);
       return;
     }
 
-    if (commentInput === "") return;
+    if (!isReady || commentInput === "") return;
     const comment = {
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
@@ -48,9 +65,15 @@ export default function RoomPage({ roomId }: Props) {
       isOptimistic: true,
     } satisfies schema.Comment;
 
-    commentsDB.actions.addComment(comment);
-
     setCommentInput("");
+    try {
+      const tx = commentsDB.actions.addComment(comment);
+      await tx.when("settled");
+    } catch (reason) {
+      console.error(reason);
+      setCommentInput(comment.content);
+      setError("送信に失敗しました。もう一度お試しください");
+    }
   };
 
   return (
@@ -67,15 +90,23 @@ export default function RoomPage({ roomId }: Props) {
               autoComplete="off"
               required
               value={commentInput}
+              maxLength={100}
               onChange={(e) => setCommentInput(e.target.value)}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && e.ctrlKey) {
-                  sendComment();
+                  void sendComment();
                 }
               }}
             />
-            <Button onClick={sendComment}>送信</Button>
+            <Button onClick={() => void sendComment()} disabled={!isReady}>
+              送信
+            </Button>
           </div>
+          {error != null && (
+            <div role="alert" className="text-sm text-destructive">
+              {error}
+            </div>
+          )}
           <div className="flex justify-end text-sm text-muted-foreground">Ctrl + Enter で送信</div>
         </CardContent>
       </Card>

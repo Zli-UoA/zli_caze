@@ -26,9 +26,11 @@ export const UsernameDialogContextProvider = ({ children }: { children: ReactNod
 };
 
 export const useUsername = (configCollection: ConfigCollection) => {
-  const { data: config } = useLiveQuery((q) =>
-    q.from({ config: configCollection }).where(({ config }) => eq(config.key, "username")),
-  );
+  const { data: config } = useLiveQuery({
+    query: (q) =>
+      q.from({ config: configCollection }).where(({ config }) => eq(config.key, "username")),
+    queryKey: ["config", "username"],
+  });
   const username = config.find((c) => c.key === "username")?.value;
 
   const setIsOpenDialog = useContext(UsernameDialogSetIsOpenContext);

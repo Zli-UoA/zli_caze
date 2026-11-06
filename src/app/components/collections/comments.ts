@@ -15,6 +15,7 @@ export const createCommentsDB = (roomId: string) =>
     streamOptions: {
       url: `${window.location.origin}/streams/${encodeURIComponent(roomId)}`,
       contentType: "application/json",
+      batching: false,
     },
     live: "sse",
     state: commentsState,
@@ -33,7 +34,7 @@ export const createCommentsDB = (roomId: string) =>
               }),
             ),
           );
-          await db.utils.awaitTxId(txid, 10_000);
+          await db.utils.awaitTxId(txid, 30_000);
         },
       },
     }),
@@ -42,6 +43,9 @@ export const createCommentsDB = (roomId: string) =>
 export type CommentsDB = ReturnType<typeof createCommentsDB>;
 
 export const preloadCommentsDB = async (db: CommentsDB) => {
-  await db.stream.create();
+  const head = await db.stream.head();
+  if (!head.exists) {
+    await db.stream.create();
+  }
   await db.preload();
 };
