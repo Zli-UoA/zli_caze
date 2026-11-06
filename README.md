@@ -31,15 +31,24 @@ vp test               # Vitest (src, durable-objects, pages tests)
 vp build              # Void production build
 ```
 
-## Preview / Deploy
+## Deploy
 
-Local dev and preview are the supported targets for this PR. Do **not** deploy over the existing production Worker yet: Void cannot hand off a Worker that exports the old stateful `Room` class, and the new Durable Streams class needs a coordinated migration.
+Merging to `main` runs `.github/workflows/void-deploy.yml`:
 
-```bash
-pnpm run preview     # vp build && vp preview
+```text
+pnpm install --frozen-lockfile
+pnpm exec void deploy --platform cloudflare
 ```
 
-To try the build on Cloudflare, deploy it as a separate Worker first (for example set `cloudflare.name` to `zli-caze-void` in `void.config.ts`) and keep the existing Worker untouched. A production cutover needs a separate runbook and an export of any old comments that must be kept.
+Add the repository secret `CLOUDFLARE_API_TOKEN` before the first deploy. If the token can access multiple accounts, also add `CLOUDFLARE_ACCOUNT_ID` and pass it to the workflow. Set `CLOUDFLARE_WORKERS_SUBDOMAIN` as a repository variable if `workers.dev` is enabled and the Worker Version has no preview URL. `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET` are only needed when Cloudflare Access protects the readiness URL.
+
+This PR replaces the existing `zli-caze` Worker in place and old data is accepted as lost. Before merging:
+
+1. Disconnect the old `zli-caze` Workers Builds integration in Cloudflare
+2. Delete the old `zli-caze` Worker (same-name replacement)
+3. Merge the PR; the workflow recreates `zli-caze` from `void.config.ts`
+
+For a non-destructive trial, set `cloudflare.name` to a separate Worker such as `zli-caze-void` and deploy that first.
 
 ## Notes
 
