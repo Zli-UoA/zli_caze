@@ -44,6 +44,10 @@ jobs:
           curl -sS -w '\nHTTP %{http_code}\n' \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
             "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts"
+          echo "--- .void contents ---"
+          ls -la .void
+          echo "--- link file ---"
+          cat .void/cloudflare-link.json 2>&1
       - name: Deploy
         env:
           # Settings -> Secrets and variables -> Actions
@@ -55,4 +59,4 @@ jobs:
           # Required only when Cloudflare Access protects Worker readiness.
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-        run: pnpm exec void deploy --platform cloudflare
+        run: pnpm exec void deploy --platform cloudflare --debug
