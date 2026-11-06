@@ -1,4 +1,4 @@
-import { createCommentsCollection } from "@/components/collections/comments";
+import { createCommentsDB, preloadCommentsDB } from "@/components/collections/comments";
 import { Viewer } from "@/lib/viewer";
 import { useLiveQuery } from "@tanstack/react-db";
 import { useEffect, useMemo, useRef } from "react";
@@ -19,20 +19,21 @@ export default function RoomViewPage({ roomId }: Props) {
   const viewRef = useRef<Viewer | null>(null);
   const commentsRef = useRef<Set<string>>(new Set());
 
-  const commentsCollection = useMemo(
-    () => createCommentsCollection(effectiveRoomId),
-    [effectiveRoomId],
-  );
+  const commentsDB = useMemo(() => createCommentsDB(effectiveRoomId), [effectiveRoomId]);
+  const commentsCollection = commentsDB.collections.comments;
 
-  const { data: comments } = useLiveQuery((q) =>
-    q
-      .from({ comment: commentsCollection })
-      .fn.select(({ comment }) => ({
-        ...comment,
-        createdAt: new Date(comment.createdAt),
-      }))
-      .orderBy(({ comment }) => comment.createdAt, "desc"),
+  useEffect(() => {
+    void preloadCommentsDB(commentsDB);
+    return () => commentsDB.close();
+  }, [commentsDB]);
+
+  const { data: rawComments } = useLiveQuery((q) =>
+    q.from({ comment: commentsCollection }).orderBy(({ comment }) => comment.createdAt, "desc"),
   );
+  const comments = rawComments.map((comment) => ({
+    ...comment,
+    createdAt: new Date(comment.createdAt),
+  }));
 
   useEffect(() => {
     const canvas = canvasRef.current;

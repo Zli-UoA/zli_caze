@@ -1,6 +1,6 @@
 # Caze (beta)
 
-A real-time room app (Void + Vite+ + TanStack DB + Cloudflare Workers) that lets you join a room by ID and post comments. A separate `/room/:roomId/view` page renders them as scrolling danmaku on canvas.
+A real-time room app (Void + Vite+ + Durable Streams + TanStack DB + Cloudflare Workers) that lets you join a room by ID and post comments. A separate `/room/:roomId/view` page renders them as scrolling danmaku on canvas.
 
 ## Getting Started
 
@@ -33,20 +33,19 @@ vp build              # Void production build
 
 ## Preview / Deploy
 
-Phase 2 is verified with local dev and preview. Do **not** deploy it to the existing production Worker yet: the Durable Object class and storage keys change, and Void cannot hand off an existing Worker that exports stateful classes.
+Local dev and preview are the supported targets for this PR. Do **not** deploy over the existing production Worker yet: Void cannot hand off a Worker that exports the old stateful `Room` class, and the new Durable Streams class needs a coordinated migration.
 
 ```bash
 pnpm run preview     # vp build && vp preview
 ```
 
-To try Phase 2 on Cloudflare, deploy it as a separate Worker first (for example set `cloudflare.name` to `zli-caze-void` in `void.config.ts`) and keep the existing Worker untouched. Phase 3 replaces the Durable Object with Durable Streams; its deployment runbook will handle the production cutover.
+To try the build on Cloudflare, deploy it as a separate Worker first (for example set `cloudflare.name` to `zli-caze-void` in `void.config.ts`) and keep the existing Worker untouched. A production cutover needs a separate runbook and an export of any old comments that must be kept.
 
 ## Notes
 
-- `@tanstack/db` and `@tanstack/react-db` must be upgraded together (exact pins: `0.4.1` / `0.1.23`).
+- `@tanstack/db` / `@tanstack/react-db` are pinned to `0.15.2` / `0.5.12`; StreamDB requires `@tanstack/db >=0.6 <1.0`. Upgrade both together.
 - `void prepare` generates `.void/` types. `.void/` and `.cloudflare/` are gitignored.
 - Pages live in `pages/`, API routes in `routes/`, and Durable Objects in `durable-objects/`.
-- PartyKit-compatible WebSocket traffic is served at `/parties/room/:roomId`.
-- Phase 2 renames the Durable Object class from `Room` to `RoomDurableObject`. Old comments are stored under the old class and are not visible to the new class; they may be permanently removed when the old Worker/class is cleaned up. No data migration is included.
-- Because the old Worker exports the stateful `Room` class, Void cannot link it while adding `RoomDurableObject`. Any eventual production replacement must either delete/replace the old Worker once its data is exported, or deploy under a new Worker name.
-- For a same-name replacement, export any needed comment data first. Atomic deploys cross a Durable Object migration boundary and cannot be rolled back across it.
+- Each room is one Durable Stream at `/streams/:roomId`. `routes/streams/[...path].ts` mounts `createStreamsHandler()`, backed by `durable-objects/streams.ts` (`defineDurableObject`, binding `STREAMS`).
+- Clients use `createStreamDB` from `@durable-streams/state/db`; `preloadCommentsDB()` creates the stream when missing, then preloads it and stays connected via SSE.
+- Old `Room` Durable Object data is not migrated. Comments written before this change are not visible to the new stream-backed app and may be deleted when the old class/Worker is cleaned up.

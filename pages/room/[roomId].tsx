@@ -1,4 +1,4 @@
-import { createCommentsCollection } from "@/components/collections/comments";
+import { createCommentsDB, preloadCommentsDB } from "@/components/collections/comments";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -6,7 +6,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useConfigCollection } from "@/lib/configContext";
 import { useUsername } from "@/lib/username";
 import { useLiveQuery } from "@tanstack/react-db";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type * as schema from "../../src/schema/message";
 import type { Props } from "./[roomId].server";
 
@@ -17,20 +17,21 @@ export default function RoomPage({ roomId }: Props) {
 
   const [commentInput, setCommentInput] = useState("");
 
-  const commentsCollection = useMemo(
-    () => createCommentsCollection(effectiveRoomId),
-    [effectiveRoomId],
-  );
+  const commentsDB = useMemo(() => createCommentsDB(effectiveRoomId), [effectiveRoomId]);
+  const commentsCollection = commentsDB.collections.comments;
 
-  const { data: comments, isLoading } = useLiveQuery((q) =>
-    q
-      .from({ comment: commentsCollection })
-      .fn.select(({ comment }) => ({
-        ...comment,
-        createdAt: new Date(comment.createdAt),
-      }))
-      .orderBy(({ comment }) => comment.createdAt, "desc"),
+  useEffect(() => {
+    void preloadCommentsDB(commentsDB);
+    return () => commentsDB.close();
+  }, [commentsDB]);
+
+  const { data: rawComments, isLoading } = useLiveQuery((q) =>
+    q.from({ comment: commentsCollection }).orderBy(({ comment }) => comment.createdAt, "desc"),
   );
+  const comments = rawComments.map((comment) => ({
+    ...comment,
+    createdAt: new Date(comment.createdAt),
+  }));
 
   const sendComment = () => {
     if (username == null) {
@@ -47,7 +48,7 @@ export default function RoomPage({ roomId }: Props) {
       isOptimistic: true,
     } satisfies schema.Comment;
 
-    commentsCollection.insert(comment);
+    commentsDB.actions.addComment(comment);
 
     setCommentInput("");
   };

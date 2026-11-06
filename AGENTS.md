@@ -33,6 +33,8 @@ release. Add a tool name to select part of the graph. For example, run
 - Package manager: pnpm (via `packageManager`). Do not use npm.
 - This is a native Void app: pages in `pages/`, API routes in `routes/`, Durable Objects in `durable-objects/`.
 - Run `void prepare` after pulling to regenerate `.void/` route and env types.
-- `@tanstack/db` and `@tanstack/react-db` must be upgraded together (exact pins: `0.4.1` / `0.1.23`).
+- `@tanstack/db` and `@tanstack/react-db` must be upgraded together (pinned `0.15.2` / `0.5.12`).
+- Room sync uses Durable Streams: one stream at `/streams/:roomId`, DO in `durable-objects/streams.ts`, client StreamDB in `src/app/components/collections/comments.ts`.
+- `preloadCommentsDB()` must create the stream before preloading; an empty room otherwise returns 404.
 
 <!--VITE PLUS END-->
