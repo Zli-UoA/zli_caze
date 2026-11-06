@@ -31,8 +31,19 @@ describe("parseCommentEvent", () => {
     expect(parseCommentEvent("{").ok).toBe(false);
   });
 
-  it("rejects arrays and unknown types", () => {
-    expect(parseCommentEvent(JSON.stringify([event])).ok).toBe(false);
+  it("accepts the one-element array envelope used by the client", () => {
+    const result = parseCommentEvent(JSON.stringify([event]));
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.wrapped).toBe(true);
+  });
+
+  it("rejects arrays with zero or multiple events", () => {
+    expect(parseCommentEvent(JSON.stringify([])).ok).toBe(false);
+    expect(parseCommentEvent(JSON.stringify([event, event])).ok).toBe(false);
+  });
+
+  it("rejects unknown types", () => {
     expect(parseCommentEvent(JSON.stringify({ ...event, type: "other" })).ok).toBe(false);
   });
 

@@ -74,6 +74,7 @@ export const UsernameDialog = ({ configCollection }: { configCollection: ConfigC
         </DialogHeader>
         <Input
           value={inputUsername}
+          maxLength={100}
           onChange={(e) => setInputUsername(e.target.value)}
           onKeyDown={(e) => {
             if (e.key !== "Enter") return;

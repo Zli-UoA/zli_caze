@@ -17,6 +17,7 @@ export default function RoomPage({ roomId }: Props) {
 
   const [commentInput, setCommentInput] = useState("");
   const [isReady, setIsReady] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const commentsDB = useMemo(() => createCommentsDB(effectiveRoomId), [effectiveRoomId]);
@@ -56,23 +57,29 @@ export default function RoomPage({ roomId }: Props) {
       return;
     }
 
-    if (!isReady || commentInput === "") return;
+    if (!isReady || isSending) return;
+    const content = commentInput.trim();
+    if (content === "") return;
     const comment = {
       id: crypto.randomUUID(),
       createdAt: new Date().toISOString(),
-      content: commentInput,
+      content,
       user: username,
       isOptimistic: true,
     } satisfies schema.Comment;
 
     setCommentInput("");
+    setIsSending(true);
     try {
       const tx = commentsDB.actions.addComment(comment);
       await tx.when("settled");
+      setError(null);
     } catch (reason) {
       console.error(reason);
-      setCommentInput(comment.content);
+      setCommentInput(content);
       setError("送信に失敗しました。もう一度お試しください");
+    } finally {
+      setIsSending(false);
     }
   };
 
@@ -98,7 +105,7 @@ export default function RoomPage({ roomId }: Props) {
                 }
               }}
             />
-            <Button onClick={() => void sendComment()} disabled={!isReady}>
+            <Button onClick={() => void sendComment()} disabled={!isReady || isSending}>
               送信
             </Button>
           </div>

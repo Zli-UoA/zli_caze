@@ -1,7 +1,7 @@
 import { createCommentsDB, preloadCommentsDB } from "@/components/collections/comments";
 import { Viewer } from "@/lib/viewer";
 import { useLiveQuery } from "@tanstack/react-db";
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "@void/react";
 import type { Props } from "./view.server";
 import "../../../src/app/app.css";
@@ -18,6 +18,7 @@ export default function RoomViewPage({ roomId }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const viewRef = useRef<Viewer | null>(null);
   const commentsRef = useRef<Set<string>>(new Set());
+  const [error, setError] = useState<string | null>(null);
 
   const commentsDB = useMemo(() => createCommentsDB(effectiveRoomId), [effectiveRoomId]);
   const commentsCollection = commentsDB.collections.comments;
@@ -27,9 +28,7 @@ export default function RoomViewPage({ roomId }: Props) {
     commentsRef.current.clear();
     preloadCommentsDB(commentsDB).catch((reason: unknown) => {
       console.error(reason);
-      if (!cancelled) {
-        // The canvas stays empty until the next navigation/reload.
-      }
+      if (!cancelled) setError("コメントの読み込みに失敗しました");
     });
     return () => {
       cancelled = true;
@@ -75,5 +74,17 @@ export default function RoomViewPage({ roomId }: Props) {
     commentsRef.current = new Set<string>(comments.map((c) => c.id));
   }, [comments]);
 
-  return <canvas ref={canvasRef} width={1920} height={1080} className="w-full" />;
+  return (
+    <div className="relative">
+      <canvas ref={canvasRef} width={1920} height={1080} className="w-full" />
+      {error != null && (
+        <div
+          role="alert"
+          className="fixed left-4 top-4 rounded-md bg-brand-dark px-4 py-2 text-sm text-red-400"
+        >
+          {error}
+        </div>
+      )}
+    </div>
+  );
 }
