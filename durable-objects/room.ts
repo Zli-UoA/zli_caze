@@ -7,13 +7,21 @@ class RoomObject extends Server {
   static options = { hibernate: true };
   async onMessage(connection: Connection, message: WSMessage) {
     if (typeof message !== "string") return;
-    const partyMessage = partyMessageSchema(schema.comment).safeParse(JSON.parse(message));
+
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(message);
+    } catch {
+      return;
+    }
+
+    const partyMessage = partyMessageSchema(schema.comment).safeParse(parsed);
 
     if (!partyMessage.success) {
       return;
     }
 
-    const roomId = connection.server;
+    const roomId = this.name;
 
     switch (partyMessage.data.type) {
       case "sync": {
@@ -35,7 +43,7 @@ class RoomObject extends Server {
               mutation.data = {
                 ...mutation.data,
                 isOptimistic: false,
-                createdAt: new Date().toISOString(),
+                ...(mutation.type === "insert" ? { createdAt: new Date().toISOString() } : {}),
               };
 
               await this.ctx.storage.put(`${roomId}:${mutation.data.id}`, mutation.data);
@@ -76,7 +84,7 @@ class RoomObject extends Server {
   }
   async getComments(roomId: string) {
     const commentMap = await this.ctx.storage.list<schema.Comment>({
-      prefix: roomId,
+      prefix: `${roomId}:`,
     });
 
     const comments = [...commentMap.values()];

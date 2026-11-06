@@ -18,7 +18,7 @@ export default defineConfig({
     options: { typeAware: true, typeCheck: true },
   },
   test: {
-    include: ["src/**/*.test.{ts,tsx}"],
+    include: ["src/**/*.test.{ts,tsx}", "durable-objects/**/*.test.ts", "pages/**/*.test.tsx"],
     environment: "node",
     passWithNoTests: true,
   },

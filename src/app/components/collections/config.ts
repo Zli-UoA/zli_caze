@@ -5,7 +5,7 @@ const configSchema = z.discriminatedUnion("key", [
   z.object({ key: z.literal("username"), value: z.string() }),
 ]);
 
-const memoryStorage = (() => {
+const createMemoryStorage = () => {
   const store = new Map<string, string>();
   return {
     getItem: (key: string) => store.get(key) ?? null,
@@ -16,12 +16,12 @@ const memoryStorage = (() => {
       store.delete(key);
     },
   };
-})();
+};
 
-const noopStorageEventApi = {
+const createNoopStorageEventApi = () => ({
   addEventListener: () => {},
   removeEventListener: () => {},
-};
+});
 
 export const createConfigCollection = () =>
   createCollection(
@@ -29,8 +29,8 @@ export const createConfigCollection = () =>
       schema: configSchema,
       getKey: (item) => item.key,
       storageKey: "config",
-      storage: typeof window === "undefined" ? memoryStorage : window.localStorage,
-      storageEventApi: typeof window === "undefined" ? noopStorageEventApi : window,
+      storage: typeof window === "undefined" ? createMemoryStorage() : window.localStorage,
+      storageEventApi: typeof window === "undefined" ? createNoopStorageEventApi() : window,
     }),
   );
 

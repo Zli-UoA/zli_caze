@@ -35,7 +35,7 @@ vp build              # Void production build
 
 ```bash
 pnpm run preview     # vp build && vp preview
-pnpm run deploy      # void deploy --platform cloudflare
+pnpm run deploy      # void deploy --platform cloudflare --atomic
 ```
 
 ## Notes
@@ -44,3 +44,5 @@ pnpm run deploy      # void deploy --platform cloudflare
 - `void prepare` generates `.void/` types. `.void/` and `.cloudflare/` are gitignored.
 - Pages live in `pages/`, API routes in `routes/`, and Durable Objects in `durable-objects/`.
 - PartyKit-compatible WebSocket traffic is served at `/parties/room/:roomId`.
+- Phase 2 renames the Durable Object class from `Room` to `RoomDurableObject`, so comments stored by the old class are not visible after the first Void deploy. Beta data loss is accepted; the deploy should be run with `--atomic`.
+- For an existing Worker, link it once with Void (restoring its `wrangler.jsonc` if needed) before running the atomic deploy, and commit the updated `void.lock.json`.

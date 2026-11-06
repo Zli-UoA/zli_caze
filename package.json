@@ -4,9 +4,8 @@
   "type": "module",
   "scripts": {
     "build": "vp build",
-    "deploy": "void deploy --platform cloudflare",
+    "deploy": "void deploy --platform cloudflare --atomic",
     "dev": "vp dev",
-    "postinstall": "void prepare",
     "preview": "pnpm run build && vp preview",
     "typecheck": "tsc --noEmit",
     "fmt": "vp fmt",

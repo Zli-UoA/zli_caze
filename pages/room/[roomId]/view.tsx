@@ -4,6 +4,9 @@ import { useLiveQuery } from "@tanstack/react-db";
 import { useEffect, useMemo, useRef } from "react";
 import { useRouter } from "@void/react";
 import type { Props } from "./view.server";
+import "../../../src/app/app.css";
+
+export const layout = false;
 
 export default function RoomViewPage({ roomId }: Props) {
   const effectiveRoomId = roomId;
