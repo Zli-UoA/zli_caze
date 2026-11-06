@@ -9,12 +9,15 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useRouter } from "@void/react";
+import { routeUrl } from "void/routes";
 import { useRef, useState } from "react";
-import { href, useNavigate } from "react-router";
 
 const validate = (input: HTMLInputElement) => {
   if (input.validity.valueMissing) {
     input.setCustomValidity("部屋IDを入力してください");
+  } else if (!/^[A-Za-z0-9_-]{1,64}$/.test(input.value)) {
+    input.setCustomValidity("部屋IDは英数字・_・-の1〜64文字で入力してください");
   } else {
     input.setCustomValidity("");
   }
@@ -22,11 +25,11 @@ const validate = (input: HTMLInputElement) => {
   return input.reportValidity();
 };
 
-export default () => {
+export default function IndexPage() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [roomId, setRoomId] = useState("");
 
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const joinRoom = () => {
     const input = inputRef.current;
@@ -35,7 +38,7 @@ export default () => {
     const isValid = validate(input);
     if (!isValid) return;
 
-    navigate(href("/room/:roomId", { roomId }));
+    void router.visit(routeUrl("/room/:roomId", { params: { roomId } }));
   };
 
   return (
@@ -43,9 +46,7 @@ export default () => {
       <Card>
         <CardHeader>
           <CardTitle>部屋に参加する</CardTitle>
-          <CardDescription>
-            部屋を作成する場合も参加するを押下してください
-          </CardDescription>
+          <CardDescription>部屋を作成する場合も参加するを押下してください</CardDescription>
           <CardAction>
             <Button onClick={joinRoom}>参加する</Button>
           </CardAction>
@@ -56,6 +57,9 @@ export default () => {
             type="text"
             id="roomId"
             autoComplete="off"
+            pattern="[A-Za-z0-9_-]{1,64}"
+            minLength={1}
+            maxLength={64}
             value={roomId}
             onChange={(e) => {
               setRoomId(e.target.value);
@@ -73,4 +77,4 @@ export default () => {
       </Card>
     </div>
   );
-};
+}

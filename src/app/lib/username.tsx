@@ -12,29 +12,25 @@ import { Input } from "@/components/ui/input";
 import { eq, useLiveQuery } from "@tanstack/react-db";
 import { type ReactNode, createContext, useContext, useState } from "react";
 
-const UsernameDialogSetIsOpenContext = createContext((isOpen: boolean) => {});
+const UsernameDialogSetIsOpenContext = createContext((_isOpen: boolean) => {});
 const UsernameDialogIsOpenContext = createContext(false);
 
-export const UsernameDialogContextProvider = ({
-  children,
-}: { children: ReactNode }) => {
+export const UsernameDialogContextProvider = ({ children }: { children: ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <UsernameDialogSetIsOpenContext value={setIsOpen}>
-      <UsernameDialogIsOpenContext value={isOpen}>
-        {children}
-      </UsernameDialogIsOpenContext>
+      <UsernameDialogIsOpenContext value={isOpen}>{children}</UsernameDialogIsOpenContext>
     </UsernameDialogSetIsOpenContext>
   );
 };
 
 export const useUsername = (configCollection: ConfigCollection) => {
-  const { data: config } = useLiveQuery((q) =>
-    q
-      .from({ config: configCollection })
-      .where(({ config }) => eq(config.key, "username")),
-  );
+  const { data: config } = useLiveQuery({
+    query: (q) =>
+      q.from({ config: configCollection }).where(({ config }) => eq(config.key, "username")),
+    queryKey: ["config", "username"],
+  });
   const username = config.find((c) => c.key === "username")?.value;
 
   const setIsOpenDialog = useContext(UsernameDialogSetIsOpenContext);
@@ -43,9 +39,7 @@ export const useUsername = (configCollection: ConfigCollection) => {
   return { username, setIsOpenDialog, isOpenDialog };
 };
 
-export const UsernameDialog = ({
-  configCollection,
-}: { configCollection: ConfigCollection }) => {
+export const UsernameDialog = ({ configCollection }: { configCollection: ConfigCollection }) => {
   const {
     username: currentUsername,
     setIsOpenDialog,
@@ -80,6 +74,7 @@ export const UsernameDialog = ({
         </DialogHeader>
         <Input
           value={inputUsername}
+          maxLength={100}
           onChange={(e) => setInputUsername(e.target.value)}
           onKeyDown={(e) => {
             if (e.key !== "Enter") return;

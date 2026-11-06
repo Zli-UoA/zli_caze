@@ -6,14 +6,7 @@ class Message {
   time: number;
   lineWidth: number;
 
-  constructor(
-    value: string,
-    x: number,
-    y: number,
-    width: number,
-    time: number,
-    lineWidth: number,
-  ) {
+  constructor(value: string, x: number, y: number, width: number, time: number, lineWidth: number) {
     this.value = value;
     this.x = x;
     this.y = y;
@@ -106,20 +99,15 @@ class Viewer {
   animationController: AnimationController;
   config: Config;
 
-  constructor(
-    canvas: HTMLCanvasElement,
-    config: Partial<Config> = defaultConfig,
-  ) {
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+  constructor(canvas: HTMLCanvasElement, config: Partial<Config> = defaultConfig) {
+    // oxlint-disable-next-line no-non-null-assertion
     this.ctx = canvas.getContext("2d")!;
     this.messages = [];
     this.config = { ...defaultConfig, ...config };
 
     this.ctx.font = `bold ${this.config.fontSize}px sans-serif`;
 
-    this.animationController = new AnimationController((deltaTime) =>
-      this.update(deltaTime),
-    );
+    this.animationController = new AnimationController((deltaTime) => this.update(deltaTime));
   }
 
   private update(deltaTime: number) {

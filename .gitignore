@@ -2,12 +2,20 @@
 /node_modules/
 *.tsbuildinfo
 
-# React Router
-/.react-router/
-/build/
+# Void
+.void-wrangler.jsonc
+/.void/
+/.cloudflare/
+/dist/
 
-# Cloudflare
-.mf
-.wrangler
+# Environment
+.env
+.env.*
 .dev.vars*
+!.env.example
 
+# Wrangler/miniflare artifacts
+.mf
+
+# Miniflare state
+/.wrangler/

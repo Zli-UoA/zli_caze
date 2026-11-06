@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "source": {
+    "name": "zli-caze",
+    "compatibility_date": "2026-02-24",
+    "compatibility_flags": ["nodejs_compat"]
+  },
+  "resolved": {
+    "name": "zli-caze",
+    "compatibility_date": "2026-02-24",
+    "compatibility_flags": ["nodejs_compat"],
+    "durable_objects": {
+      "bindings": [
+        {
+          "name": "STREAMS",
+          "class_name": "StreamsDurableObject"
+        }
+      ]
+    },
+    "migrations": [
+      {
+        "tag": "void-durable-streams-v1",
+        "new_sqlite_classes": ["StreamsDurableObject"]
+      }
+    ]
+  },
+  "text": "{\n  \"name\": \"zli-caze\",\n  \"compatibility_date\": \"2026-02-24\",\n  \"compatibility_flags\": [\n    \"nodejs_compat\"\n  ],\n  \"durable_objects\": {\n    \"bindings\": [\n      {\n        \"name\": \"STREAMS\",\n        \"class_name\": \"StreamsDurableObject\"\n      }\n    ]\n  },\n  \"migrations\": [\n    {\n      \"tag\": \"void-durable-streams-v1\",\n      \"new_sqlite_classes\": [\n        \"StreamsDurableObject\"\n      ]\n    }\n  ]\n}\n"
+}

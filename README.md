@@ -1,25 +1,15 @@
-# Welcome to React Router!
+# Caze (beta)
 
-A modern, production-ready template for building full-stack React applications using React Router.
-
-## Features
-
-- 🚀 Server-side rendering
-- ⚡️ Hot Module Replacement (HMR)
-- 📦 Asset bundling and optimization
-- 🔄 Data loading and mutations
-- 🔒 TypeScript by default
-- 🎉 TailwindCSS for styling
-- 📖 [React Router docs](https://reactrouter.com/)
+A real-time room app (Void + Vite+ + Durable Streams + TanStack DB + Cloudflare Workers) that lets you join a room by ID and post comments. A separate `/room/:roomId/view` page renders them as scrolling danmaku on canvas.
 
 ## Getting Started
 
-### Installation
+> Package manager: pnpm (via `packageManager`). Do not use npm. Node version is pinned via `.node-version` (Vite+ 1.4 / Vitest 5 requires `^22.18.0 || ^24.11.0 || >=26.0.0`).
 
-Install the dependencies:
+Install dependencies:
 
 ```bash
-npm install
+pnpm install
 ```
 
 ### Development
@@ -27,53 +17,46 @@ npm install
 Start the development server with HMR:
 
 ```bash
-npm run dev
+pnpm run dev        # vp dev
 ```
 
 Your application will be available at `http://localhost:5173`.
 
-## Previewing the Production Build
-
-Preview the production build locally:
+## Checks
 
 ```bash
-npm run preview
+pnpm run typecheck   # tsc --noEmit
+vp check              # Oxfmt + Oxlint (type-aware)
+vp test               # Vitest (src, durable-objects, pages tests)
+vp build              # Void production build
 ```
 
-## Building for Production
+## Deploy
 
-Create a production build:
+Merging to `main` runs `.github/workflows/void-deploy.yml`:
 
-```bash
-npm run build
+```text
+pnpm install --frozen-lockfile
+pnpm exec void deploy --platform cloudflare
 ```
 
-## Deployment
+Add the repository secret `CLOUDFLARE_API_TOKEN` before the first deploy. If the token can access multiple accounts, also add `CLOUDFLARE_ACCOUNT_ID` and pass it to the workflow. Set `CLOUDFLARE_WORKERS_SUBDOMAIN` as a repository variable if `workers.dev` is enabled and the Worker Version has no preview URL. `CF_ACCESS_CLIENT_ID` / `CF_ACCESS_CLIENT_SECRET` are only needed when Cloudflare Access protects the readiness URL.
 
-Deployment is done using the Wrangler CLI.
+This PR replaces the existing `zli-caze` Worker in place and old data is accepted as lost. Before merging:
 
-To build and deploy directly to production:
+1. Disconnect the old `zli-caze` Workers Builds integration in Cloudflare
+2. Delete the old `zli-caze` Worker (same-name replacement)
+3. Merge the PR; the workflow recreates `zli-caze` from `void.config.ts`
 
-```sh
-npm run deploy
-```
+For a non-destructive trial, set `cloudflare.name` to a separate Worker such as `zli-caze-void` and deploy that first.
 
-To deploy a preview URL:
+## Notes
 
-```sh
-npx wrangler versions upload
-```
-
-You can then promote a version to production after verification or roll it out progressively.
-
-```sh
-npx wrangler versions deploy
-```
-
-## Styling
-
-This template comes with [Tailwind CSS](https://tailwindcss.com/) already configured for a simple default starting experience. You can use whatever CSS framework you prefer.
-
----
-
-Built with ❤️ using React Router.
+- `@tanstack/db` / `@tanstack/react-db` are pinned to `0.15.2` / `0.5.12`; StreamDB requires `@tanstack/db >=0.6 <1.0`. Upgrade both together.
+- `void prepare` generates `.void/` types. `.void/` and `.cloudflare/` are gitignored.
+- Pages live in `pages/`, API routes in `routes/`, and Durable Objects in `durable-objects/`.
+- Each room is one Durable Stream at `/streams/:roomId`. `routes/streams/[...path].ts` mounts `createStreamsHandler()`, backed by `durable-objects/streams.ts` (`defineDurableObject`, binding `STREAMS`).
+- The stream route disables CORS, does not expose `DELETE`, and validates `comment` insert events before forwarding; it also stamps `createdAt` server-side and rejects malformed events with 400.
+- Room access is currently anonymous: anyone who knows a room ID can read, post, and overwrite a comment by reusing its id. There is no per-room rate limit or quota. This matches the beta product model and is an accepted risk; there is no `AUTH_TOKEN` configured. Setting one would require the client to send an `Authorization` header.
+- Clients use `createStreamDB` from `@durable-streams/state/db`; `preloadCommentsDB()` creates the stream when missing, then preloads it and stays connected via SSE.
+- Old `Room` Durable Object data is not migrated. Comments written before this change are not visible to the new stream-backed app and may be deleted when the old class/Worker is cleaned up.
