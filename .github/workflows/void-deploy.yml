@@ -22,6 +22,28 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
+      - name: Diagnose Cloudflare access
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set +e
+          echo "account_id_length=${#CLOUDFLARE_ACCOUNT_ID}"
+          echo "token_length=${#CLOUDFLARE_API_TOKEN}"
+          CF_BIN=$(find node_modules/.pnpm -path '*/cf/bin/cf' -print -quit)
+          echo "cf_bin=$CF_BIN"
+          echo "--- cf auth whoami ---"
+          node "$CF_BIN" auth whoami
+          echo "--- cf workers deployments list ---"
+          node "$CF_BIN" workers deployments list --worker zli-caze
+          echo "--- API deployments ---"
+          curl -sS -w '\nHTTP %{http_code}\n' \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/zli-caze/deployments"
+          echo "--- API scripts ---"
+          curl -sS -w '\nHTTP %{http_code}\n' \
+            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts"
       - name: Deploy
         env:
           # Settings -> Secrets and variables -> Actions
