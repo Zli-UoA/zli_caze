@@ -4,7 +4,7 @@ A real-time room app (Void + Vite+ + Durable Streams + TanStack DB + Cloudflare 
 
 ## Getting Started
 
-> Package manager: pnpm (via `packageManager`). Do not use npm. Node version is pinned via `.node-version` (Vite+ 1.4 / Vitest 5 requires `^22.18.0 || ^24.11.0 || >=26.0.0`).
+> Package manager: pnpm (via `packageManager`). Do not use npm. Node version is pinned via `.node-version` (Void 1.6 requires `^24.22.0 || >=26.12.0`; Vite+ 1.4 requires `^22.18.0 || ^24.11.0 || >=26.0.0`).
 
 Install dependencies:
 

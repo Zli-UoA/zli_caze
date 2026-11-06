@@ -22,46 +22,6 @@ jobs:
           node-version-file: .node-version
           cache: pnpm
       - run: pnpm install --frozen-lockfile
-      - name: Diagnose Cloudflare access
-        env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-        run: |
-          set +e
-          echo "account_id_length=${#CLOUDFLARE_ACCOUNT_ID}"
-          echo "token_length=${#CLOUDFLARE_API_TOKEN}"
-          CF_BIN=$(find node_modules/.pnpm -path '*/cf/bin/cf' -print -quit)
-          echo "cf_bin=$CF_BIN"
-          echo "--- cf auth whoami ---"
-          node "$CF_BIN" auth whoami
-          echo "--- cf workers deployments list ---"
-          node "$CF_BIN" workers deployments list --worker zli-caze
-          echo "--- API deployments ---"
-          curl -sS -w '\nHTTP %{http_code}\n' \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts/zli-caze/deployments"
-          echo "--- API scripts ---"
-          curl -sS -w '\nHTTP %{http_code}\n' \
-            -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/workers/scripts"
-          echo "--- .void contents ---"
-          ls -la .void
-          echo "--- link file ---"
-          cat .void/cloudflare-link.json 2>&1 || true
-          exit 0
-      - name: Patch Void diagnostics
-        run: |
-          FILE=$(find node_modules/.pnpm -path '*/@void/deploy-cloudflare/dist/index.mjs' -print -quit)
-          echo "patching $FILE"
-          node - "$FILE" <<'NODE'
-          const fs = require('fs');
-          const file = process.argv[2];
-          let s = fs.readFileSync(file, 'utf8');
-          const needle = 'const result = await options.runWrangler(operation, { capture: true });';
-          if (!s.includes(needle)) throw new Error('needle not found');
-          s = s.replace(needle, needle + ' console.error("VOID_DEBUG", JSON.stringify({operation, status: result.status, stdout: result.stdout, stderr: result.stderr, errorCode: result.errorCode, failure: result.failure, error: result.error, signal: result.signal}));');
-          fs.writeFileSync(file, s);
-          NODE
       - name: Deploy
         env:
           # Settings -> Secrets and variables -> Actions
@@ -73,4 +33,4 @@ jobs:
           # Required only when Cloudflare Access protects Worker readiness.
           CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
           CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
-        run: pnpm exec void deploy --platform cloudflare --debug
+        run: pnpm exec void deploy --platform cloudflare
