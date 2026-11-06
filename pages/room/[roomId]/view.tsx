@@ -1,30 +1,29 @@
 import { createCommentsCollection } from "@/components/collections/comments";
 import { Viewer } from "@/lib/viewer";
 import { useLiveQuery } from "@tanstack/react-db";
-import { useEffect, useRef } from "react";
-import { useSearchParams } from "react-router";
-import type { Route } from "./+types/_app.room.$roomId";
+import { useEffect, useMemo, useRef } from "react";
+import { useRouter } from "@void/react";
+import type { Props } from "./view.server";
 
-export const clientLoader = async ({ params }: Route.LoaderArgs) => {
-  const roomId = params.roomId;
+export default function RoomViewPage({ roomId }: Props) {
+  const effectiveRoomId = roomId;
+  const router = useRouter();
 
-  const commentsCollection = createCommentsCollection(roomId);
-
-  return { roomId, commentsCollection };
-};
-
-export default ({ loaderData }: Route.ComponentProps) => {
-  const [searchParams, _setSearchParams] = useSearchParams();
-  const fontSize = searchParams.get("fontSize");
-  const lineWidth = searchParams.get("lineWidth");
+  const fontSize = router.query.get("fontSize");
+  const lineWidth = router.query.get("lineWidth");
 
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const viewRef = useRef<Viewer | null>(null);
   const commentsRef = useRef<Set<string>>(new Set());
 
+  const commentsCollection = useMemo(
+    () => createCommentsCollection(effectiveRoomId),
+    [effectiveRoomId],
+  );
+
   const { data: comments } = useLiveQuery((q) =>
     q
-      .from({ comment: loaderData.commentsCollection })
+      .from({ comment: commentsCollection })
       .fn.select(({ comment }) => ({
         ...comment,
         createdAt: new Date(comment.createdAt),
@@ -61,4 +60,4 @@ export default ({ loaderData }: Route.ComponentProps) => {
   }, [comments]);
 
   return <canvas ref={canvasRef} width={1920} height={1080} className="w-full" />;
-};
+}

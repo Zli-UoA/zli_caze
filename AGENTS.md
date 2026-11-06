@@ -31,7 +31,8 @@ release. Add a tool name to select part of the graph. For example, run
 ## Project notes
 
 - Package manager: pnpm (via `packageManager`). Do not use npm.
-- Regenerate types: `pnpm run cf-typegen` (or via `postinstall`).
-- @tanstack/db and @tanstack/react-db must be upgraded together (exact pins: `0.4.1` / `0.1.23`).
+- This is a native Void app: pages in `pages/`, API routes in `routes/`, Durable Objects in `durable-objects/`.
+- Run `void prepare` after pulling to regenerate `.void/` route and env types.
+- `@tanstack/db` and `@tanstack/react-db` must be upgraded together (exact pins: `0.4.1` / `0.1.23`).
 
 <!--VITE PLUS END-->

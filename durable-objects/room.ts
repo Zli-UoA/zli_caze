@@ -1,9 +1,9 @@
 import { type PartyMessage, partyMessageSchema } from "@/lib/partyCollection";
-import { type Connection, Server, type WSMessage, routePartykitRequest } from "partyserver";
-import { createRequestHandler } from "react-router";
-import * as schema from "../schema/message";
+import { type Connection, Server, type WSMessage } from "partyserver";
+import * as schema from "../src/schema/message";
+import { defineDurableObject } from "void/durable";
 
-export class Room extends Server {
+class RoomObject extends Server {
   static options = { hibernate: true };
   async onMessage(connection: Connection, message: WSMessage) {
     if (typeof message !== "string") return;
@@ -84,28 +84,9 @@ export class Room extends Server {
   }
 }
 
-declare module "react-router" {
-  export interface AppLoadContext {
-    cloudflare: {
-      env: Env;
-      ctx: ExecutionContext;
-    };
-  }
-}
+export const Room = defineDurableObject({
+  name: "room",
+  class: RoomObject,
+});
 
-const requestHandler = createRequestHandler(
-  () => import("virtual:react-router/server-build"),
-  import.meta.env.MODE,
-);
-
-export default {
-  async fetch(request, env, ctx) {
-    return (
-      // @ts-expect-error
-      (await routePartykitRequest(request, env)) ??
-      (await requestHandler(request, {
-        cloudflare: { env, ctx },
-      }))
-    );
-  },
-} satisfies ExportedHandler<Env>;
+export default Room;

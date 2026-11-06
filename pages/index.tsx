@@ -9,8 +9,9 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { useRouter } from "@void/react";
+import { routeUrl } from "void/routes";
 import { useRef, useState } from "react";
-import { href, useNavigate } from "react-router";
 
 const validate = (input: HTMLInputElement) => {
   if (input.validity.valueMissing) {
@@ -22,11 +23,11 @@ const validate = (input: HTMLInputElement) => {
   return input.reportValidity();
 };
 
-export default () => {
+export default function IndexPage() {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [roomId, setRoomId] = useState("");
 
-  const navigate = useNavigate();
+  const router = useRouter();
 
   const joinRoom = () => {
     const input = inputRef.current;
@@ -35,7 +36,7 @@ export default () => {
     const isValid = validate(input);
     if (!isValid) return;
 
-    navigate(href("/room/:roomId", { roomId }));
+    void router.visit(routeUrl("/room/:roomId", { params: { roomId } }));
   };
 
   return (
@@ -71,4 +72,4 @@ export default () => {
       </Card>
     </div>
   );
-};
+}

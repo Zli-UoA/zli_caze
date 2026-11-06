@@ -71,7 +71,7 @@ export const partyCollectionOptions = <
     {
       resolve: () => void;
       reject: (error: Error) => void;
-      timeout: number;
+      timeout: ReturnType<typeof setTimeout>;
     }
   >();
 

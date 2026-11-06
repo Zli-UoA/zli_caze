@@ -11,3 +11,11 @@
 .wrangler
 .dev.vars*
 
+.void-wrangler.jsonc
+node_modules
+dist
+.void
+.cloudflare
+.env
+.env.*
+!.env.example

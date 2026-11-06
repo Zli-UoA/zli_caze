@@ -1,34 +1,30 @@
 import { createCommentsCollection } from "@/components/collections/comments";
-import { type ConfigCollection, createConfigCollection } from "@/components/collections/config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useConfigCollection } from "@/lib/configContext";
 import { useUsername } from "@/lib/username";
 import { useLiveQuery } from "@tanstack/react-db";
-import { useState } from "react";
-import { useOutletContext } from "react-router";
-import type * as schema from "../../schema/message";
-import type { Route } from "./+types/_app.room.$roomId";
+import { useMemo, useState } from "react";
+import type * as schema from "../../src/schema/message";
+import type { Props } from "./[roomId].server";
 
-export const clientLoader = async ({ params }: Route.LoaderArgs) => {
-  const roomId = params.roomId;
-
-  const commentsCollection = createCommentsCollection(roomId);
-  const configCollection = createConfigCollection();
-
-  return { roomId, commentsCollection, configCollection };
-};
-
-export default ({ loaderData }: Route.ComponentProps) => {
-  const configCollection = useOutletContext<ConfigCollection>();
+export default function RoomPage({ roomId }: Props) {
+  const configCollection = useConfigCollection();
   const { username, setIsOpenDialog } = useUsername(configCollection);
+  const effectiveRoomId = roomId;
 
   const [commentInput, setCommentInput] = useState("");
 
+  const commentsCollection = useMemo(
+    () => createCommentsCollection(effectiveRoomId),
+    [effectiveRoomId],
+  );
+
   const { data: comments, isLoading } = useLiveQuery((q) =>
     q
-      .from({ comment: loaderData.commentsCollection })
+      .from({ comment: commentsCollection })
       .fn.select(({ comment }) => ({
         ...comment,
         createdAt: new Date(comment.createdAt),
@@ -51,7 +47,7 @@ export default ({ loaderData }: Route.ComponentProps) => {
       isOptimistic: true,
     } satisfies schema.Comment;
 
-    loaderData.commentsCollection.insert(comment);
+    commentsCollection.insert(comment);
 
     setCommentInput("");
   };
@@ -60,7 +56,7 @@ export default ({ loaderData }: Route.ComponentProps) => {
     <div className="max-w-3xl mx-auto px-4 py-36 flex flex-col gap-8">
       <Card>
         <CardHeader>
-          <CardTitle>部屋ID: {loaderData.roomId}</CardTitle>
+          <CardTitle>部屋ID: {effectiveRoomId}</CardTitle>
         </CardHeader>
         <CardContent className="flex flex-col gap-6">
           <div className="flex gap-6">
@@ -108,4 +104,4 @@ export default ({ loaderData }: Route.ComponentProps) => {
       </div>
     </div>
   );
-};
+}

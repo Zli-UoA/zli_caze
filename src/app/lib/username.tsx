@@ -12,7 +12,7 @@ import { Input } from "@/components/ui/input";
 import { eq, useLiveQuery } from "@tanstack/react-db";
 import { type ReactNode, createContext, useContext, useState } from "react";
 
-const UsernameDialogSetIsOpenContext = createContext((isOpen: boolean) => {});
+const UsernameDialogSetIsOpenContext = createContext((_isOpen: boolean) => {});
 const UsernameDialogIsOpenContext = createContext(false);
 
 export const UsernameDialogContextProvider = ({ children }: { children: ReactNode }) => {
