@@ -47,7 +47,8 @@ jobs:
           echo "--- .void contents ---"
           ls -la .void
           echo "--- link file ---"
-          cat .void/cloudflare-link.json 2>&1
+          cat .void/cloudflare-link.json 2>&1 || true
+          exit 0
       - name: Deploy
         env:
           # Settings -> Secrets and variables -> Actions
