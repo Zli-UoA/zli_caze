@@ -48,6 +48,6 @@ To try the build on Cloudflare, deploy it as a separate Worker first (for exampl
 - Pages live in `pages/`, API routes in `routes/`, and Durable Objects in `durable-objects/`.
 - Each room is one Durable Stream at `/streams/:roomId`. `routes/streams/[...path].ts` mounts `createStreamsHandler()`, backed by `durable-objects/streams.ts` (`defineDurableObject`, binding `STREAMS`).
 - The stream route disables CORS, does not expose `DELETE`, and validates `comment` insert events before forwarding; it also stamps `createdAt` server-side and rejects malformed events with 400.
-- Room access is currently anonymous: anyone who knows a room ID can read or post. This matches the beta product model and is an accepted risk; there is no `AUTH_TOKEN` configured. Setting one would require the client to send an `Authorization` header.
+- Room access is currently anonymous: anyone who knows a room ID can read, post, and overwrite a comment by reusing its id. There is no per-room rate limit or quota. This matches the beta product model and is an accepted risk; there is no `AUTH_TOKEN` configured. Setting one would require the client to send an `Authorization` header.
 - Clients use `createStreamDB` from `@durable-streams/state/db`; `preloadCommentsDB()` creates the stream when missing, then preloads it and stays connected via SSE.
 - Old `Room` Durable Object data is not migrated. Comments written before this change are not visible to the new stream-backed app and may be deleted when the old class/Worker is cleaned up.

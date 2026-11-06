@@ -1,5 +1,11 @@
 import { createStreamsHandler, type DefaultAuthEnv } from "@durable-streams/server-cloudflare";
-import { isRoomPath, forwardHeaders } from "@/lib/streamProxy";
+import {
+  forwardHeaders,
+  hasNonEmptyBody,
+  isJsonContentType,
+  isRoomPath,
+  readTextWithLimit,
+} from "@/lib/streamProxy";
 import { parseCommentEvent } from "@/lib/streamEvent";
 import { defineHandler } from "void";
 
@@ -19,13 +25,12 @@ export const PUT = defineHandler(async (c) => {
   if (!isRoomPath(c.req.path)) {
     return new Response("Not found", { status: 404 });
   }
-  if (!c.req.header("content-type")?.startsWith("application/json")) {
+  if (!isJsonContentType(c.req.header("content-type") ?? null)) {
     return new Response("Unsupported media type", { status: 415 });
   }
 
   // Allow stream creation only; disallow seeding unvalidated initial events.
-  const body = await c.req.arrayBuffer();
-  if (body.byteLength !== 0) {
+  if (await hasNonEmptyBody(c.req.raw)) {
     return new Response("Initial stream payloads are not accepted", { status: 400 });
   }
 
@@ -43,8 +48,12 @@ export const POST = defineHandler(async (c) => {
     return new Response("Not found", { status: 404 });
   }
 
-  const raw = await c.req.text();
-  const result = parseCommentEvent(raw);
+  const bodyResult = await readTextWithLimit(c.req.raw);
+  if (!bodyResult.ok) {
+    return new Response("Payload too large", { status: 413 });
+  }
+
+  const result = parseCommentEvent(bodyResult.text);
   if (!result.ok) {
     return c.text(result.reason, { status: 400 });
   }
