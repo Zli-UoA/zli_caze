@@ -49,6 +49,19 @@ jobs:
           echo "--- link file ---"
           cat .void/cloudflare-link.json 2>&1 || true
           exit 0
+      - name: Patch Void diagnostics
+        run: |
+          FILE=$(find node_modules/.pnpm -path '*/@void/deploy-cloudflare/dist/index.mjs' -print -quit)
+          echo "patching $FILE"
+          node - "$FILE" <<'NODE'
+          const fs = require('fs');
+          const file = process.argv[2];
+          let s = fs.readFileSync(file, 'utf8');
+          const needle = 'const result = await options.runWrangler(operation, { capture: true });';
+          if (!s.includes(needle)) throw new Error('needle not found');
+          s = s.replace(needle, needle + ' console.error("VOID_DEBUG", JSON.stringify({operation, status: result.status, stdout: result.stdout, stderr: result.stderr, errorCode: result.errorCode, failure: result.failure, error: result.error, signal: result.signal}));');
+          fs.writeFileSync(file, s);
+          NODE
       - name: Deploy
         env:
           # Settings -> Secrets and variables -> Actions
