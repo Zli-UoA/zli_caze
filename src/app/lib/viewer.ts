@@ -100,7 +100,7 @@ class Viewer {
   config: Config;
 
   constructor(canvas: HTMLCanvasElement, config: Partial<Config> = defaultConfig) {
-    // biome-ignore lint/style/noNonNullAssertion: <explanation>
+    // oxlint-disable-next-line no-non-null-assertion
     this.ctx = canvas.getContext("2d")!;
     this.messages = [];
     this.config = { ...defaultConfig, ...config };

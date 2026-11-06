@@ -5,12 +5,12 @@
   "scripts": {
     "build": "react-router build",
     "cf-typegen": "wrangler types",
-    "deploy": "npm run build && wrangler deploy",
+    "deploy": "pnpm run build && wrangler deploy",
     "dev": "react-router dev",
-    "postinstall": "npm run cf-typegen",
-    "preview": "npm run build && vp preview",
-    "typecheck": "npm run cf-typegen && react-router typegen && tsc -b",
-    "fmt": "biome check --write",
+    "postinstall": "pnpm run cf-typegen",
+    "preview": "pnpm run build && vp preview",
+    "typecheck": "pnpm run cf-typegen && react-router typegen && tsc -b",
+    "fmt": "vp fmt",
     "prepare": "vp config"
   },
   "dependencies": {
@@ -20,8 +20,8 @@
     "@radix-ui/react-slot": "^1.2.3",
     "@react-router/fs-routes": "7.18.5",
     "@standard-schema/spec": "^1.0.0",
-    "@tanstack/db": "^0.4.1",
-    "@tanstack/react-db": "^0.1.23",
+    "@tanstack/db": "0.4.1",
+    "@tanstack/react-db": "0.1.23",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "isbot": "^5.1.27",
@@ -35,7 +35,6 @@
     "zod": "^4.0.5"
   },
   "devDependencies": {
-    "@biomejs/biome": "^1.9.4",
     "@cloudflare/vite-plugin": "^1.0.12",
     "@react-router/dev": "7.18.5",
     "@tailwindcss/vite": "^4.1.4",
@@ -48,7 +47,6 @@
     "vite": "catalog:",
     "vite-plugin-devtools-json": "^1.0.0",
     "vite-plus": "catalog:",
-    "vite-tsconfig-paths": "^5.1.4",
     "wrangler": "^4.13.2"
   },
   "packageManager": "pnpm@10.13.1+sha512.37ebf1a5c7a30d5fabe0c5df44ee8da4c965ca0c5af3dbab28c3a1681b70a256218d05c81c9c0dcf767ef6b8551eb5b960042b9ed4300c59242336377e01cfad"

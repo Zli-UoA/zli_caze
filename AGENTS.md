@@ -28,4 +28,10 @@ release. Add a tool name to select part of the graph. For example, run
 - [ ] Check if there are `vite.config.ts` tasks or `package.json` scripts necessary for validation, run via `vp run <script>`.
 - [ ] If setup, runtime, or package-manager behavior looks wrong, run `vp env doctor` and include its output when asking for help.
 
+## Project notes
+
+- Package manager: pnpm (via `packageManager`). Do not use npm.
+- Regenerate types: `pnpm run cf-typegen` (or via `postinstall`).
+- @tanstack/db and @tanstack/react-db must be upgraded together (exact pins: `0.4.1` / `0.1.23`).
+
 <!--VITE PLUS END-->
