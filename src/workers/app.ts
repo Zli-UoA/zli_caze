@@ -1,10 +1,5 @@
 import { type PartyMessage, partyMessageSchema } from "@/lib/partyCollection";
-import {
-  type Connection,
-  Server,
-  type WSMessage,
-  routePartykitRequest,
-} from "partyserver";
+import { type Connection, Server, type WSMessage, routePartykitRequest } from "partyserver";
 import { createRequestHandler } from "react-router";
 import * as schema from "../schema/message";
 
@@ -12,9 +7,7 @@ export class Room extends Server {
   static options = { hibernate: true };
   async onMessage(connection: Connection, message: WSMessage) {
     if (typeof message !== "string") return;
-    const partyMessage = partyMessageSchema(schema.comment).safeParse(
-      JSON.parse(message),
-    );
+    const partyMessage = partyMessageSchema(schema.comment).safeParse(JSON.parse(message));
 
     if (!partyMessage.success) {
       return;
@@ -45,10 +38,7 @@ export class Room extends Server {
                 createdAt: new Date().toISOString(),
               };
 
-              await this.ctx.storage.put(
-                `${roomId}:${mutation.data.id}`,
-                mutation.data,
-              );
+              await this.ctx.storage.put(`${roomId}:${mutation.data.id}`, mutation.data);
               break;
             }
 

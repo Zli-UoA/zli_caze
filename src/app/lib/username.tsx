@@ -15,25 +15,19 @@ import { type ReactNode, createContext, useContext, useState } from "react";
 const UsernameDialogSetIsOpenContext = createContext((isOpen: boolean) => {});
 const UsernameDialogIsOpenContext = createContext(false);
 
-export const UsernameDialogContextProvider = ({
-  children,
-}: { children: ReactNode }) => {
+export const UsernameDialogContextProvider = ({ children }: { children: ReactNode }) => {
   const [isOpen, setIsOpen] = useState(false);
 
   return (
     <UsernameDialogSetIsOpenContext value={setIsOpen}>
-      <UsernameDialogIsOpenContext value={isOpen}>
-        {children}
-      </UsernameDialogIsOpenContext>
+      <UsernameDialogIsOpenContext value={isOpen}>{children}</UsernameDialogIsOpenContext>
     </UsernameDialogSetIsOpenContext>
   );
 };
 
 export const useUsername = (configCollection: ConfigCollection) => {
   const { data: config } = useLiveQuery((q) =>
-    q
-      .from({ config: configCollection })
-      .where(({ config }) => eq(config.key, "username")),
+    q.from({ config: configCollection }).where(({ config }) => eq(config.key, "username")),
   );
   const username = config.find((c) => c.key === "username")?.value;
 
@@ -43,9 +37,7 @@ export const useUsername = (configCollection: ConfigCollection) => {
   return { username, setIsOpenDialog, isOpenDialog };
 };
 
-export const UsernameDialog = ({
-  configCollection,
-}: { configCollection: ConfigCollection }) => {
+export const UsernameDialog = ({ configCollection }: { configCollection: ConfigCollection }) => {
   const {
     username: currentUsername,
     setIsOpenDialog,

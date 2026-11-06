@@ -1,14 +1,7 @@
-import {
-  type ConfigCollection,
-  createConfigCollection,
-} from "@/components/collections/config";
+import { type ConfigCollection, createConfigCollection } from "@/components/collections/config";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
-import {
-  UsernameDialog,
-  UsernameDialogContextProvider,
-  useUsername,
-} from "@/lib/username";
+import { UsernameDialog, UsernameDialogContextProvider, useUsername } from "@/lib/username";
 import { Settings } from "lucide-react";
 import { Link, Outlet, href } from "react-router";
 import type { Route } from "./+types/_app";
@@ -31,12 +24,7 @@ const App = ({ configCollection }: { configCollection: ConfigCollection }) => {
                 <Logo className="h-8 text-brand-primary" />
                 <span className="text-3xl font-bold">Caze (beta)</span>
               </Link>
-              <Button
-                asChild
-                variant="secondary"
-                size="icon"
-                onClick={() => setIsOpenDialog(true)}
-              >
+              <Button asChild variant="secondary" size="icon" onClick={() => setIsOpenDialog(true)}>
                 <Settings />
               </Button>
             </div>

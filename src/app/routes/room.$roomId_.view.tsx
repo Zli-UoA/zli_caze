@@ -60,7 +60,5 @@ export default ({ loaderData }: Route.ComponentProps) => {
     commentsRef.current = new Set<string>(comments.map((c) => c.id));
   }, [comments]);
 
-  return (
-    <canvas ref={canvasRef} width={1920} height={1080} className="w-full" />
-  );
+  return <canvas ref={canvasRef} width={1920} height={1080} className="w-full" />;
 };

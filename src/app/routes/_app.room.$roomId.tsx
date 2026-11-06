@@ -1,8 +1,5 @@
 import { createCommentsCollection } from "@/components/collections/comments";
-import {
-  type ConfigCollection,
-  createConfigCollection,
-} from "@/components/collections/config";
+import { type ConfigCollection, createConfigCollection } from "@/components/collections/config";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -82,9 +79,7 @@ export default ({ loaderData }: Route.ComponentProps) => {
             />
             <Button onClick={sendComment}>送信</Button>
           </div>
-          <div className="flex justify-end text-sm text-muted-foreground">
-            Ctrl + Enter で送信
-          </div>
+          <div className="flex justify-end text-sm text-muted-foreground">Ctrl + Enter で送信</div>
         </CardContent>
       </Card>
       <div className="flex flex-col gap-4">

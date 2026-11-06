@@ -43,9 +43,7 @@ export default () => {
       <Card>
         <CardHeader>
           <CardTitle>部屋に参加する</CardTitle>
-          <CardDescription>
-            部屋を作成する場合も参加するを押下してください
-          </CardDescription>
+          <CardDescription>部屋を作成する場合も参加するを押下してください</CardDescription>
           <CardAction>
             <Button onClick={joinRoom}>参加する</Button>
           </CardAction>

@@ -36,18 +36,13 @@ export const partyMessageSchema = <T extends z.ZodType>(itemSchema: T) =>
     }),
   ]);
 
-export type PartyMessage<T> = z.infer<
-  ReturnType<typeof partyMessageSchema<z.ZodType<T>>>
->;
+export type PartyMessage<T> = z.infer<ReturnType<typeof partyMessageSchema<z.ZodType<T>>>>;
 
 interface PartyCollectionConfig<
   TItem extends object = object,
   Tkey extends string | number = string | number,
   TSchema extends StandardSchemaV1 = never,
-> extends Omit<
-    BaseCollectionConfig<TItem, Tkey, TSchema>,
-    "onInsert" | "onUpdate" | "onDelete"
-  > {
+> extends Omit<BaseCollectionConfig<TItem, Tkey, TSchema>, "onInsert" | "onUpdate" | "onDelete"> {
   ws: PartySocket;
 }
 
@@ -80,9 +75,7 @@ export const partyCollectionOptions = <
     }
   >();
 
-  const sync: SyncConfig<InferSchemaOutput<TSchema>, TKey>["sync"] = (
-    params,
-  ) => {
+  const sync: SyncConfig<InferSchemaOutput<TSchema>, TKey>["sync"] = (params) => {
     const { begin, write, commit, markReady } = params;
 
     ws.onopen = () => {
@@ -90,9 +83,7 @@ export const partyCollectionOptions = <
     };
 
     ws.onmessage = (event) => {
-      const message: PartyMessage<InferSchemaOutput<TSchema>> = JSON.parse(
-        event.data,
-      );
+      const message: PartyMessage<InferSchemaOutput<TSchema>> = JSON.parse(event.data);
 
       switch (message.type) {
         case "sync": {
