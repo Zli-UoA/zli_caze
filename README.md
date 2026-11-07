@@ -1,4 +1,4 @@
-# Caze (beta)
+# Caze
 
 A real-time room app (Void + Vite+ + Durable Streams + TanStack DB + Cloudflare Workers) that lets you join a room by ID and post comments. A separate `/room/:roomId/view` page renders them as scrolling danmaku on canvas.
 
