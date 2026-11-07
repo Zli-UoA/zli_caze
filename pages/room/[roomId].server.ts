@@ -19,7 +19,8 @@ export const loader = defineHandler(async (c) => {
   const principal = await getContextPrincipal(c);
   if (!canViewRoom(principal, room)) {
     if (principal == null) {
-      const next = new URL(c.req.url).pathname;
+      const url = new URL(c.req.url);
+      const next = `${url.pathname}${url.search}`;
       throw new HTTPException(302, {
         res: new Response(null, {
           status: 302,
