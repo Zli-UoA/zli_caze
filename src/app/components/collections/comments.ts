@@ -43,9 +43,7 @@ export const createCommentsDB = (roomId: string) =>
 export type CommentsDB = ReturnType<typeof createCommentsDB>;
 
 export const preloadCommentsDB = async (db: CommentsDB) => {
-  const head = await db.stream.head();
-  if (!head.exists) {
-    await db.stream.create();
-  }
+  // Rooms are created by the server, which also creates their stream. The
+  // client must never create streams for arbitrary room IDs.
   await db.preload();
 };

@@ -6,7 +6,7 @@ export const isRoomPath = (path: string): boolean => ROOM_PATH.test(path);
 export const isJsonContentType = (value: string | null): boolean =>
   value?.split(";")[0]?.trim().toLowerCase() === "application/json";
 
-const ALLOWED_HEADERS = new Set(["content-type", "accept", "authorization"]);
+const ALLOWED_HEADERS = new Set(["content-type", "accept"]);
 
 /** Only forward safe request headers; Stream-* controls can close/expire streams. */
 export const forwardHeaders = (headers: Headers): Headers => {

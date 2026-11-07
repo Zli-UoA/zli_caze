@@ -6,6 +6,8 @@ const comment = {
   createdAt: "2026-01-01T00:00:00.000Z",
   content: "hello",
   user: "alice",
+  authorId: "user-1",
+  authorType: "member" as const,
   isOptimistic: false,
 };
 

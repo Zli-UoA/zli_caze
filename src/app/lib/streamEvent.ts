@@ -1,8 +1,8 @@
 import type { ChangeEvent } from "@durable-streams/state";
-import { comment, type Comment } from "src/schema/message";
+import { commentDraft, type CommentDraft } from "src/schema/message";
 
 export type CommentEventResult =
-  | { ok: true; event: ChangeEvent<Comment>; wrapped: boolean }
+  | { ok: true; event: ChangeEvent<CommentDraft>; wrapped: boolean }
   | { ok: false; reason: string };
 
 const isObject = (value: unknown): value is Record<string, unknown> =>
@@ -12,6 +12,9 @@ const isObject = (value: unknown): value is Record<string, unknown> =>
  * Validate a state event before it is appended to a room stream.
  * The stream consumer aborts the whole room if one event is malformed, so
  * rejecting early is required to keep a room alive.
+ *
+ * Author fields are deliberately not read from the client here. The stream
+ * route stamps them from the authenticated principal before forwarding.
  */
 export const parseCommentEvent = (raw: string): CommentEventResult => {
   let parsed: unknown;
@@ -39,7 +42,7 @@ export const parseCommentEvent = (raw: string): CommentEventResult => {
     return { ok: false, reason: "Only insert events are accepted" };
   }
 
-  const result = comment.safeParse(parsedEvent.value);
+  const result = commentDraft.safeParse(parsedEvent.value);
   if (!result.success) {
     return { ok: false, reason: "Comment does not match the schema" };
   }
@@ -62,7 +65,7 @@ export const parseCommentEvent = (raw: string): CommentEventResult => {
       headers: {
         operation: "insert",
         ...(typeof txid === "string" ? { txid } : {}),
-      } as ChangeEvent<Comment>["headers"],
+      } as ChangeEvent<CommentDraft>["headers"],
     },
   };
 };

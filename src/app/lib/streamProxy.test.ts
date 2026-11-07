@@ -35,7 +35,7 @@ describe("forwardHeaders", () => {
     const forwarded = forwardHeaders(headers);
     expect(forwarded.get("content-type")).toBe("application/json");
     expect(forwarded.get("accept")).toBe("application/json");
-    expect(forwarded.get("authorization")).toBe("Bearer token");
+    expect(forwarded.get("authorization")).toBeNull();
     expect(forwarded.get("stream-closed")).toBeNull();
     expect(forwarded.get("stream-seq")).toBeNull();
     expect(forwarded.get("stream-forked-from")).toBeNull();
