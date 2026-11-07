@@ -3,7 +3,7 @@ import type { CloudContext } from "void";
 import { env } from "void/env";
 
 export const requestOrigin = (c: CloudContext): string =>
-  env.PUBLIC_ORIGIN ?? new URL(c.req.url).origin;
+  (env.PUBLIC_ORIGIN ?? new URL(c.req.url).origin).replace(/\/$/, "");
 
 export const isSecureRequest = (c: CloudContext): boolean =>
   requestOrigin(c).startsWith("https://");

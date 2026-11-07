@@ -10,6 +10,7 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { safeNextPath } from "@/lib/safeNext";
 import { Link, useRouter, useShared } from "@void/react";
 import { routeUrl } from "void/routes";
 import { useRef, useState } from "react";
@@ -42,7 +43,7 @@ const extractGuestCode = (value: string): string => {
 export default function IndexPage() {
   const router = useRouter();
   const { principal } = useShared<{ principal: Principal | null }>();
-  const next = router.query.get("next") ?? "/";
+  const next = safeNextPath(router.query.get("next"));
 
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [roomId, setRoomId] = useState("");

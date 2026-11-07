@@ -1,10 +1,11 @@
 import { LoginCard } from "@/components/auth/LoginCard";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { safeNextPath } from "@/lib/safeNext";
 import { Link, useRouter } from "@void/react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const next = router.query.get("next") ?? "/";
+  const next = safeNextPath(router.query.get("next"));
 
   return (
     <div className="max-w-3xl mx-auto px-4 py-36 flex flex-col gap-6">
