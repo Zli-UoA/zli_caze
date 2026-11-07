@@ -4,6 +4,10 @@ import devtoolsJson from "vite-plugin-devtools-json";
 import { voidReact } from "@void/react/plugin";
 import { voidPlugin } from "void";
 
+const devAllowedHosts = process.env.VITE_DEV_ALLOWED_HOSTS?.split(",")
+  .map((host) => host.trim())
+  .filter((host) => host !== "");
+
 export default defineConfig({
   resolve: {
     tsconfigPaths: true,
@@ -22,6 +26,9 @@ export default defineConfig({
     environment: "node",
     passWithNoTests: true,
   },
+  ...(devAllowedHosts != null && devAllowedHosts.length > 0
+    ? { server: { allowedHosts: devAllowedHosts } }
+    : {}),
   plugins: lazyPlugins(() => [
     ...(process.env.VITEST ? [] : [voidPlugin(), voidReact()]),
     tailwindcss(),
