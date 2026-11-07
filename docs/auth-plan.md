@@ -122,10 +122,25 @@ export default defineAuth(({ defaults, env }) => ({
   emailAndPassword: { enabled: false },
   user: {
     additionalFields: {
-      authzSub: { type: "string", required: false, input: false },
-      username: { type: "string", required: false, input: false },
-      isAdmin: { type: "boolean", required: false, defaultValue: false, input: false },
-      groups: { type: "string", required: false, input: false },
+      // input: true so mapProfileToUser can write these; databaseHooks below
+      // removes them from ordinary /update-user requests.
+      authzSub: { type: "string", required: false, input: true },
+      username: { type: "string", required: false, input: true },
+      isAdmin: { type: "boolean", required: false, defaultValue: false, input: true },
+      groups: { type: "string", required: false, input: true },
+    },
+  },
+  databaseHooks: {
+    user: {
+      update: {
+        before: async (user, context) => {
+          const path = context?.path ?? "";
+          if (path.startsWith("/callback/")) return;
+          const next = { ...user };
+          for (const field of ["authzSub", "username", "isAdmin", "groups"]) delete next[field];
+          return { data: next };
+        },
+      },
     },
   },
   plugins: [
@@ -200,13 +215,13 @@ type Principal =
   | {
       type: "member";
       userId: string; // Better Auth の user.id
-      authzSub: string;
       name: string;
       isAdmin: boolean;
     }
   | {
       type: "guest";
       sessionId: string;
+      inviteId: string;
       roomId: string;
       name: string;
     };
