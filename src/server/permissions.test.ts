@@ -22,7 +22,6 @@ const room = (overrides: Partial<Room> = {}): Room => ({
 const member: MemberPrincipal = {
   type: "member",
   userId: "user-1",
-  authzSub: "authz-sub-1",
   name: "Member",
   isAdmin: false,
 };

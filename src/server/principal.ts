@@ -15,7 +15,6 @@ export const getPrincipal = async (c: CloudContext): Promise<Principal | null> =
     return {
       type: "member",
       userId: user.id,
-      authzSub: user.authzSub ?? "",
       name: user.name,
       isAdmin: user.isAdmin === true,
     };

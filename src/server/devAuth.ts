@@ -29,7 +29,6 @@ export const getDevUser = (c: CloudContext): MemberPrincipal | null => {
     return {
       type: "member",
       userId: `dev:${name}`,
-      authzSub: `dev:${name}`,
       name,
       isAdmin: parsed.isAdmin === true,
     };

@@ -5,7 +5,6 @@ export type Room = typeof rooms.$inferSelect;
 export type MemberPrincipal = {
   type: "member";
   userId: string;
-  authzSub: string;
   name: string;
   isAdmin: boolean;
 };
