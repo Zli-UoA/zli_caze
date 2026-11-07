@@ -22,6 +22,12 @@ pnpm run dev        # vp dev
 
 Your application will be available at `http://localhost:5173`.
 
+For a temporary tunnel, allow its host when starting the dev server:
+
+```bash
+VITE_DEV_ALLOWED_HOSTS=<tunnel-host> pnpm run dev
+```
+
 Authentication uses AuthZ OIDC. For local development, create `.env` with the AuthZ client values and `PUBLIC_ORIGIN`, or use the development-only `CAZE_DEV_AUTH=1` login at `/auth/dev?name=Dev&admin=1`. The dev route is excluded from production builds.
 
 ```ini
