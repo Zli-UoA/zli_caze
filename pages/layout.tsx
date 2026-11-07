@@ -1,64 +1,81 @@
-import { createConfigCollection } from "@/components/collections/config";
 import { Logo } from "@/components/logo";
 import { Button } from "@/components/ui/button";
-import { ConfigCollectionProvider } from "@/lib/configContext";
-import { UsernameDialog, UsernameDialogContextProvider, useUsername } from "@/lib/username";
-import type { ConfigCollection } from "@/components/collections/config";
-import { Link } from "@void/react";
-import { Settings } from "lucide-react";
-import { useMemo, useState, useEffect, type ReactNode } from "react";
+import { Link, useRouter, useShared } from "@void/react";
+import { useState, type ReactNode } from "react";
+import { auth } from "void/client/react";
+import type { Principal } from "../src/server/types";
 import "../src/app/app.css";
 
-const HeaderSettings = ({ configCollection }: { configCollection: ConfigCollection }) => {
-  const { setIsOpenDialog } = useUsername(configCollection);
+const Header = ({ principal }: { principal: Principal | null }) => {
+  const router = useRouter();
+  const [pending, setPending] = useState(false);
+
+  const logout = async () => {
+    if (pending) return;
+    setPending(true);
+    try {
+      if (principal?.type === "member") {
+        await auth.signOut();
+      }
+    } catch (error) {
+      console.error(error);
+    }
+    try {
+      await fetch("/auth/logout", { method: "POST" });
+    } catch (error) {
+      console.error(error);
+    }
+    setPending(false);
+    void router.visit("/");
+  };
+
   return (
-    <Button asChild variant="secondary" size="icon" onClick={() => setIsOpenDialog(true)}>
-      <Settings />
-    </Button>
-  );
-};
-
-const App = ({
-  children,
-  configCollection,
-}: {
-  children: ReactNode;
-  configCollection: ConfigCollection;
-}) => {
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  return (
-    <>
-      <div className="bg-brand-secondary h-lvh overflow-y-scroll">
-        <header className="bg-brand-dark text-brand-light fixed w-full">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between h-16 items-center">
-              <Link href="/" className="flex items-center">
-                <Logo className="h-8 w-auto" />
+    <header className="bg-brand-dark text-brand-light fixed w-full z-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex justify-between h-16 items-center gap-4">
+          <Link href="/" className="flex items-center">
+            <Logo className="h-8 w-auto" />
+          </Link>
+          <nav className="flex items-center gap-3 text-sm">
+            {principal?.type === "member" && principal.isAdmin && (
+              <Link className="hover:underline" href="/admin/rooms">
+                ルーム管理
               </Link>
-              {mounted && <HeaderSettings configCollection={configCollection} />}
-            </div>
-          </div>
-        </header>
-        {children}
+            )}
+            {principal == null ? (
+              <Button asChild variant="secondary" size="sm">
+                <Link href="/login">ログイン</Link>
+              </Button>
+            ) : (
+              <>
+                <span className="text-brand-light/80">
+                  {principal.type === "guest" ? "ゲスト: " : ""}
+                  {principal.name}
+                </span>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => void logout()}
+                  disabled={pending}
+                >
+                  ログアウト
+                </Button>
+              </>
+            )}
+          </nav>
+        </div>
       </div>
-      {mounted && <UsernameDialog configCollection={configCollection} />}
-    </>
+    </header>
   );
 };
 
 export default function Layout({ children }: { children: ReactNode }) {
-  const configCollection = useMemo(() => createConfigCollection(), []);
+  const { principal } = useShared<{ principal: Principal | null }>();
 
   return (
-    <UsernameDialogContextProvider>
-      <ConfigCollectionProvider value={configCollection}>
-        <App configCollection={configCollection}>{children}</App>
-      </ConfigCollectionProvider>
-    </UsernameDialogContextProvider>
+    <div className="bg-brand-secondary h-lvh overflow-y-scroll">
+      <Header principal={principal} />
+      {children}
+    </div>
   );
 }
