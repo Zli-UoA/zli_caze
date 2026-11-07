@@ -165,6 +165,7 @@ export default defineAuth(({ defaults, env }) => ({
 - `genericOAuth` の callback は `/api/auth/callback/authz`。AuthZ の Redirect URI と完全一致させる。
 - `tokenEndpointAuth` は confidential client の登録方式に合わせる（`client_secret_post` を想定）。
 - `mapProfileToUser` が返す `email` は AuthZ の `email` をそのまま使う。`emailVerified` は true にしない。
+- `isAdmin` / `groups` / `authzSub` / `username` は `input: true` にして AuthZ プロフィールから更新し、`databaseHooks.user.update.before` で OAuth callback 以外からの更新を剥がす。`/update-user` による権限昇格を防ぐため。
 - `better-auth` を `package.json` の依存に明示する（Void の推移依存に頼らない）。
 - `void/auth` の `getUser()` がストリームルートでも動くことを確認する。動かない場合は `auth.api.getSession({ headers })` に切り替える。
 

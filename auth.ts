@@ -1,5 +1,6 @@
 import { genericOAuth } from "better-auth/plugins";
 import { defineAuth } from "void/auth";
+import { stripProtectedUserFields } from "./src/server/authProfile";
 
 const asString = (value: unknown, fallback = ""): string =>
   typeof value === "string" ? value : fallback;
@@ -20,10 +21,28 @@ export default defineAuth(({ defaults, env }) => {
       ...defaults.user,
       additionalFields: {
         ...defaults.user?.additionalFields,
-        authzSub: { type: "string", required: false, input: false },
-        username: { type: "string", required: false, input: false },
-        isAdmin: { type: "boolean", required: false, defaultValue: false, input: false },
-        groups: { type: "string", required: false, input: false },
+        // These fields are written from the verified AuthZ profile. The
+        // database hook below removes them from ordinary update-user calls
+        // so a client cannot grant itself admin access.
+        authzSub: { type: "string", required: false, input: true },
+        username: { type: "string", required: false, input: true },
+        isAdmin: { type: "boolean", required: false, defaultValue: false, input: true },
+        groups: { type: "string", required: false, input: true },
+      },
+    },
+    databaseHooks: {
+      ...defaults.databaseHooks,
+      user: {
+        ...defaults.databaseHooks?.user,
+        update: {
+          ...defaults.databaseHooks?.user?.update,
+          before: async (user, context) => {
+            const path = context?.path ?? "";
+            const next = stripProtectedUserFields(user, path);
+            if (next === user) return;
+            return { data: next };
+          },
+        },
       },
     },
     plugins: [
