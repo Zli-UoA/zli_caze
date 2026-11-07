@@ -10,7 +10,7 @@ export const getPrincipal = async (c: CloudContext): Promise<Principal | null> =
   const devUser = getDevUser(c);
   if (devUser != null) return devUser;
 
-  const user = getUser();
+  const user = getUser() ?? c.get("user") ?? null;
   if (user != null) {
     return {
       type: "member",
