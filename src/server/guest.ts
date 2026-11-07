@@ -194,11 +194,22 @@ export const createGuestInvite = async (
   return token;
 };
 
-export const listGuestInvites = async (
-  roomId: string,
-): Promise<(typeof guestInvites.$inferSelect)[]> =>
+export type GuestInviteSummary = Pick<
+  typeof guestInvites.$inferSelect,
+  "id" | "label" | "expiresAt" | "maxUses" | "usedCount" | "createdAt" | "revokedAt"
+>;
+
+export const listGuestInvites = async (roomId: string): Promise<GuestInviteSummary[]> =>
   db
-    .select()
+    .select({
+      id: guestInvites.id,
+      label: guestInvites.label,
+      expiresAt: guestInvites.expiresAt,
+      maxUses: guestInvites.maxUses,
+      usedCount: guestInvites.usedCount,
+      createdAt: guestInvites.createdAt,
+      revokedAt: guestInvites.revokedAt,
+    })
     .from(guestInvites)
     .where(eq(guestInvites.roomId, roomId))
     .orderBy(guestInvites.createdAt);
