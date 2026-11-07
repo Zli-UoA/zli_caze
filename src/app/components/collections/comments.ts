@@ -19,26 +19,20 @@ export const createCommentsDB = (roomId: string) =>
     },
     live: "sse",
     state: commentsState,
-    actions: ({ db, stream }) => ({
-      addComment: {
-        onMutate: (comment: Comment) => {
-          db.collections.comments.insert(comment);
-        },
-        mutationFn: async (comment: Comment) => {
-          const txid = crypto.randomUUID();
-          await stream.append(
-            JSON.stringify(
-              commentsState.comments.insert({
-                value: { ...comment, isOptimistic: false },
-                headers: { txid },
-              }),
-            ),
-          );
-          await db.utils.awaitTxId(txid, 30_000);
-        },
-      },
-    }),
   });
+
+export const appendComment = async (db: CommentsDB, comment: Comment) => {
+  const txid = crypto.randomUUID();
+  await db.stream.append(
+    JSON.stringify(
+      commentsState.comments.insert({
+        value: { ...comment, isOptimistic: false },
+        headers: { txid },
+      }),
+    ),
+  );
+  await db.utils.awaitTxId(txid, 30_000);
+};
 
 export type CommentsDB = ReturnType<typeof createCommentsDB>;
 

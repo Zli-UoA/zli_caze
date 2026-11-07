@@ -1,4 +1,8 @@
-import { createCommentsDB, preloadCommentsDB } from "@/components/collections/comments";
+import {
+  appendComment,
+  createCommentsDB,
+  preloadCommentsDB,
+} from "@/components/collections/comments";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -84,8 +88,7 @@ export default function RoomPage({ roomId, room, principal, canPost }: Props) {
     setCommentInput("");
     setIsSending(true);
     try {
-      const tx = commentsDB.actions.addComment(comment);
-      await tx.when("settled");
+      await appendComment(commentsDB, comment);
       setError(null);
     } catch (reason) {
       console.error(reason);

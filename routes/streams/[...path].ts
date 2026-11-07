@@ -58,11 +58,15 @@ export const POST = defineHandler(async (c) => {
     return c.text(result.reason, { status: 400 });
   }
 
-  // Never trust author fields or timestamps from the client.
+  // Never trust author fields, timestamps, or comment ids from the client.
+  // A server-generated id prevents overwriting another comment by reusing its id.
+  const commentId = crypto.randomUUID();
   const event = {
     ...result.event,
+    key: commentId,
     value: {
       ...result.event.value,
+      id: commentId,
       ...commentAuthor(principal),
       createdAt: new Date().toISOString(),
       isOptimistic: false,
