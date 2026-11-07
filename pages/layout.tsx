@@ -37,9 +37,8 @@ const App = ({
         <header className="bg-brand-dark text-brand-light fixed w-full">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between h-16 items-center">
-              <Link href="/" className="flex items-center gap-4">
-                <Logo className="h-8 text-brand-primary" />
-                <span className="text-3xl font-bold">Caze (beta)</span>
+              <Link href="/" className="flex items-center">
+                <Logo className="h-8 w-auto" />
               </Link>
               {mounted && <HeaderSettings configCollection={configCollection} />}
             </div>
