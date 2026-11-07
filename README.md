@@ -76,7 +76,7 @@ For a non-destructive trial, set `cloudflare.name` to a separate Worker such as 
 - Pages live in `pages/`, API routes in `routes/`, and Durable Objects in `durable-objects/`.
 - Each room is one Durable Stream at `/streams/:roomId`. `routes/streams/[...path].ts` mounts the shared `createStreamsHandler()`, backed by `durable-objects/streams.ts` (`defineDurableObject`, binding `STREAMS`).
 - Room metadata lives in D1 (`rooms`). Admins create rooms at `/admin/rooms/new`; the server creates the stream, and clients never create streams for arbitrary IDs.
-- Stream access is authorized: `link` rooms allow anonymous reads; `members` rooms require a member or invited guest. Posting always requires AuthZ or a guest session. The route stamps `user`, `authorId`, `authorType`, and `createdAt` server-side and rejects malformed events with 400.
+- Stream access is authorized: `link` rooms allow anonymous reads; `members` rooms require a member or invited guest. Posting always requires AuthZ or a guest session. The route generates the comment id and stamps `user`, `authorId`, `authorType`, and `createdAt` server-side; malformed events are rejected with 400.
 - Guests join via room-scoped invite links (`/join/:token`). Invites have an expiry, optional use limit, and can be revoked. Guest sessions are stored in D1 and scoped to one room.
 - Zli members sign in through AuthZ. The admin group is `zli-officers` (`CAZE_ADMIN_GROUP`), delivered through the AuthZ `groups` scope.
 - Clients use `createStreamDB` from `@durable-streams/state/db`; `preloadCommentsDB()` only preloads the stream and stays connected via SSE. The server creates the stream when an admin creates a room.

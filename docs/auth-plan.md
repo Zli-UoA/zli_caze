@@ -321,7 +321,7 @@ export const comment = z.object({
 
 - 新規コメントはサーバーが `user` / `authorId` / `authorType` / `createdAt` / `isOptimistic` を上書きする。
 - `user` は投稿時点の表示名を保存する。後で AuthZ の表示名を変えても過去コメントの表示名は変えない。
-- クライアントの楽観コメントは、ルームローダーで受け取った Principal の `userId` / `sessionId` と `type` を `authorId` / `authorType` に入れる。サーバーは最終値を上書きする。
+- クライアントは楽観行を挿入せず、サーバーが生成したコメント ID のイベントを待つ。`user` / `authorId` / `authorType` はサーバーが確定する。
 - 既存ルームは破棄するため、旧コメントとの互換性は考慮しない。
 - クライアントが送った `user` は楽観表示にだけ使い、サーバーは無視する。
 
@@ -365,7 +365,7 @@ export const comment = z.object({
 
 ### 6.1 ページローダー / アクション
 
-- `/room/:roomId` のローダーで `canViewRoom` を検証する。`link` ルームは匿名も許可し、`members` ルームは Principal を必須にする。不可なら 403 またはログインへリダイレクト。`ssr = false` でもローダーはサーバーで動くため、ここで認可する。ローダーは画面表示と楽観コメント用に `principal` も返す。
+- `/room/:roomId` のローダーで `canViewRoom` を検証する。`link` ルームは匿名も許可し、`members` ルームは Principal を必須にする。不可なら 403 またはログインへリダイレクト。`ssr = false` でもローダーはサーバーで動くため、ここで認可する。ローダーは画面表示用に `principal` も返す。
 - `/room/:roomId/view` も同じ判定を通す。`link` ルームは匿名で投影でき、`members` ルームは保護する。
 - 管理ページのローダー/アクションで `canListRooms` / `canCreateRoom` / `canManageRoom` を検証する。
 - ゲスト参加アクションで招待の期限・回数・失効を検証する。
@@ -387,7 +387,7 @@ export const comment = z.object({
 - `forwardHeaders` から `authorization` を外す。Cookie 認証に統一する。
 - StreamDB の fetch は same-origin なので Cookie は自動で付く。`credentials` の追加設定は不要だが、リバースプロキシ配下では `PUBLIC_ORIGIN` と実際の origin を一致させる。
 - コメント本文は 1〜100 文字、ボディは既存の 64 KiB 制限を維持する。
-- 可能ならコメント ID をサーバー生成にし、他人のコメント ID を再利用した上書きを防ぐ。クライアントの楽観更新は `txid` で reconciler する。
+- コメント ID はサーバー生成にし、他人のコメント ID を再利用した上書きを防ぐ。クライアントは `txid` でサーバーイベントの到着を待つ。
 
 ### 6.3 ルーム作成とストリーム
 
@@ -526,7 +526,7 @@ export const comment = z.object({
 | open redirect                    | `next` を同一 origin のパスだけ許可                                                  |
 | 管理者権限の残留                 | 次回ログインで `groups` を再取得。必要なら短命セッション/UserInfo 再確認             |
 | 管理者アカウントの侵害           | 認証は AuthZ のパスキーに任せ、Caze はパスワードを持たない。管理操作は監査ログに残す |
-| コメント ID の再利用による上書き | 可能ならサーバー生成 ID、または ID 所有権の索引                                      |
+| コメント ID の再利用による上書き | コメント ID はサーバー生成（実装済み）                                               |
 | ルーム ID の推測                 | イベント用はランダム ID を使い、必要なら `visibility = 'members'` にする             |
 | ログへの token 漏えい            | Authorization / Cookie / 招待 token をログに出さない                                 |
 
