@@ -5,9 +5,13 @@
     "pages/**/*.tsx",
     "routes/**/*.ts",
     "routes/**/*.tsx",
+    "middleware/**/*.ts",
     "durable-objects/**/*.ts",
+    "db/**/*.ts",
     "src/**/*.ts",
     "src/**/*.tsx",
+    "auth.ts",
+    "env.ts",
     "vite.config.ts",
     "void.config.ts"
   ],
@@ -23,8 +27,12 @@
     "jsx": "react-jsx",
     "lib": ["ESNext", "DOM", "DOM.Iterable"],
     "paths": {
+      "@/server/*": ["./src/server/*"],
       "@/*": ["./src/app/*"],
-      "src/*": ["./src/*"]
+      "src/*": ["./src/*"],
+      "@schema": ["./db/schema.ts"],
+      "@schema/*": ["./db/schema/*"],
+      "void/db": ["./.void/db.d.ts"]
     },
     "types": ["void/env"]
   }

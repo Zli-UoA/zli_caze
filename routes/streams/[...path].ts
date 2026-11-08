@@ -1,52 +1,53 @@
-import { createStreamsHandler, type DefaultAuthEnv } from "@durable-streams/server-cloudflare";
+import type { DefaultAuthEnv } from "@durable-streams/server-cloudflare";
 import {
   forwardHeaders,
-  hasNonEmptyBody,
   isJsonContentType,
   isRoomPath,
   readTextWithLimit,
 } from "@/lib/streamProxy";
 import { parseCommentEvent } from "@/lib/streamEvent";
+import { comment as commentSchema } from "src/schema/message";
+import { requireSameOrigin } from "@/server/http";
+import { canPostComment, canViewRoom } from "@/server/permissions";
+import { commentAuthor, getContextPrincipal } from "@/server/principal";
+import { getRoom } from "@/server/rooms";
+import { streamsHandler } from "@/server/streams";
 import { defineHandler } from "void";
 
-const handler = createStreamsHandler({ cors: false });
+const roomIdFromPath = (path: string): string => path.slice("/streams/".length);
 
-const streams = defineHandler((c) => {
-  if (!isRoomPath(c.req.path)) {
-    return new Response("Not found", { status: 404 });
-  }
-  return handler(c.req.raw, c.env as unknown as DefaultAuthEnv);
+const roomForPath = async (path: string) => {
+  if (!isRoomPath(path)) return null;
+  return getRoom(roomIdFromPath(path));
+};
+
+export const GET = defineHandler(async (c) => {
+  const room = await roomForPath(c.req.path);
+  if (room == null) return new Response("Not found", { status: 404 });
+
+  const principal = await getContextPrincipal(c);
+  if (!canViewRoom(principal, room)) return new Response("Forbidden", { status: 403 });
+
+  return streamsHandler(c.req.raw, c.env as unknown as DefaultAuthEnv);
 });
 
-export const GET = streams;
-export const OPTIONS = streams;
+export const OPTIONS = defineHandler((c) => {
+  if (!isRoomPath(c.req.path)) return new Response("Not found", { status: 404 });
+  return streamsHandler(c.req.raw, c.env as unknown as DefaultAuthEnv);
+});
 
-export const PUT = defineHandler(async (c) => {
-  if (!isRoomPath(c.req.path)) {
-    return new Response("Not found", { status: 404 });
-  }
+export const POST = defineHandler(async (c) => {
+  requireSameOrigin(c);
+
+  const room = await roomForPath(c.req.path);
+  if (room == null) return new Response("Not found", { status: 404 });
   if (!isJsonContentType(c.req.header("content-type") ?? null)) {
     return new Response("Unsupported media type", { status: 415 });
   }
 
-  // Allow stream creation only; disallow seeding unvalidated initial events.
-  if (await hasNonEmptyBody(c.req.raw)) {
-    return new Response("Initial stream payloads are not accepted", { status: 400 });
-  }
-
-  return handler(
-    new Request(c.req.raw.url, {
-      method: "PUT",
-      headers: forwardHeaders(c.req.raw.headers),
-    }),
-    c.env as unknown as DefaultAuthEnv,
-  );
-});
-
-export const POST = defineHandler(async (c) => {
-  if (!isRoomPath(c.req.path)) {
-    return new Response("Not found", { status: 404 });
-  }
+  const principal = await getContextPrincipal(c);
+  if (principal == null) return new Response("Unauthorized", { status: 401 });
+  if (!canPostComment(principal, room)) return new Response("Forbidden", { status: 403 });
 
   const bodyResult = await readTextWithLimit(c.req.raw);
   if (!bodyResult.ok) {
@@ -58,8 +59,28 @@ export const POST = defineHandler(async (c) => {
     return c.text(result.reason, { status: 400 });
   }
 
-  const body = JSON.stringify(result.wrapped ? [result.event] : result.event);
-  return handler(
+  // Never trust author fields, timestamps, or comment ids from the client.
+  // A server-generated id prevents overwriting another comment by reusing its id.
+  const commentId = crypto.randomUUID();
+  const event = {
+    ...result.event,
+    key: commentId,
+    value: {
+      ...result.event.value,
+      id: commentId,
+      ...commentAuthor(principal),
+      createdAt: new Date().toISOString(),
+      isOptimistic: false,
+    },
+  };
+  const finalComment = commentSchema.safeParse(event.value);
+  if (!finalComment.success) {
+    return c.text("Comment author is invalid", { status: 400 });
+  }
+  const safeEvent = { ...event, value: finalComment.data };
+  const body = JSON.stringify(result.wrapped ? [safeEvent] : safeEvent);
+
+  return streamsHandler(
     new Request(c.req.raw.url, {
       method: "POST",
       headers: forwardHeaders(c.req.raw.headers),

@@ -17,35 +17,29 @@ export const createCommentsDB = (roomId: string) =>
       contentType: "application/json",
       batching: false,
     },
+    // SSE is the production live mode. Temporary Cloudflare quick tunnels may
+    // cancel the stream, in which case new comments appear after a reload.
     live: "sse",
     state: commentsState,
-    actions: ({ db, stream }) => ({
-      addComment: {
-        onMutate: (comment: Comment) => {
-          db.collections.comments.insert(comment);
-        },
-        mutationFn: async (comment: Comment) => {
-          const txid = crypto.randomUUID();
-          await stream.append(
-            JSON.stringify(
-              commentsState.comments.insert({
-                value: { ...comment, isOptimistic: false },
-                headers: { txid },
-              }),
-            ),
-          );
-          await db.utils.awaitTxId(txid, 30_000);
-        },
-      },
-    }),
   });
+
+export const appendComment = async (db: CommentsDB, comment: Comment) => {
+  const txid = crypto.randomUUID();
+  await db.stream.append(
+    JSON.stringify(
+      commentsState.comments.insert({
+        value: { ...comment, isOptimistic: false },
+        headers: { txid },
+      }),
+    ),
+  );
+  await db.utils.awaitTxId(txid, 15_000);
+};
 
 export type CommentsDB = ReturnType<typeof createCommentsDB>;
 
 export const preloadCommentsDB = async (db: CommentsDB) => {
-  const head = await db.stream.head();
-  if (!head.exists) {
-    await db.stream.create();
-  }
+  // Rooms are created by the server, which also creates their stream. The
+  // client must never create streams for arbitrary room IDs.
   await db.preload();
 };

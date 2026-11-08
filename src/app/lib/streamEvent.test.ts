@@ -69,4 +69,17 @@ describe("parseCommentEvent", () => {
   it("rejects a key that does not match the comment id", () => {
     expect(parseCommentEvent(JSON.stringify({ ...event, key: "other" })).ok).toBe(false);
   });
+
+  it("does not trust client-supplied author fields", () => {
+    const result = parseCommentEvent(
+      JSON.stringify({
+        ...event,
+        value: { ...comment, authorId: "someone-else", authorType: "admin" },
+      }),
+    );
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+    expect(result.event.value).not.toHaveProperty("authorId");
+    expect(result.event.value).not.toHaveProperty("authorType");
+  });
 });

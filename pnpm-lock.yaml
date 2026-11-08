@@ -47,12 +47,18 @@ importers:
       '@tanstack/react-db':
         specifier: 0.5.12
         version: 0.5.12(react@19.3.1)(typescript@5.9.3)
+      better-auth:
+        specifier: 1.7.18
+        version: 1.7.18(drizzle-kit@0.31.11)(drizzle-orm@0.45.4(@cloudflare/workers-types@5.20261106.1)(better-sqlite3@13.0.3)(kysely@0.29.8)(mysql2@3.24.6(@types/node@20.19.43))(pg@8.23.1))(mysql2@3.24.6(@types/node@20.19.43))(pg@8.23.1)(react-dom@19.3.1(react@19.3.1))(react@19.3.1)(vitest@5.0.5)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
       clsx:
         specifier: ^2.1.1
         version: 2.1.1
+      hono:
+        specifier: 4.13.16
+        version: 4.13.16
       lucide-react:
         specifier: ^0.513.0
         version: 0.513.0(react@19.3.1)
