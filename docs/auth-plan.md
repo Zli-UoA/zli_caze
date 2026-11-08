@@ -152,7 +152,7 @@ export default defineAuth(({ defaults, env }) => ({
           discoveryUrl: `${String(env.AUTHZ_ISSUER).replace(/\/$/, "")}/.well-known/openid-configuration`,
           clientId: String(env.AUTHZ_CLIENT_ID),
           clientSecret: String(env.AUTHZ_CLIENT_SECRET),
-          tokenEndpointAuth: { method: "client_secret_post" },
+          tokenEndpointAuth: { method: "client_secret_basic" },
           scopes: ["openid", "profile", "email", "groups"],
           pkce: true,
           requireIdTokenVerification: true,
@@ -178,7 +178,7 @@ export default defineAuth(({ defaults, env }) => ({
 実装時の確認点:
 
 - `genericOAuth` の callback は `/api/auth/callback/authz`。AuthZ の Redirect URI と完全一致させる。
-- `tokenEndpointAuth` は confidential client の登録方式に合わせる（`client_secret_post` を想定）。
+- `tokenEndpointAuth` は confidential client の登録方式に合わせる。AuthZ の Caze client は `client_secret_basic` で登録されているため basic を使う。`client_secret_post` だと `client registered for client_secret_basic cannot use client_secret_post` で token 交換に失敗する。
 - `mapProfileToUser` が返す `email` は AuthZ の `email` をそのまま使う。`emailVerified` は true にしない。
 - `isAdmin` / `groups` / `authzSub` / `username` は `input: true` にして AuthZ プロフィールから更新し、`databaseHooks.user.update.before` で OAuth callback 以外からの更新を剥がす。`/update-user` による権限昇格を防ぐため。
 - `better-auth` を `package.json` の依存に明示する（Void の推移依存に頼らない）。

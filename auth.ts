@@ -75,7 +75,7 @@ export default defineAuth(({ defaults, env, request }) => {
             discoveryUrl,
             clientId: asString(env.AUTHZ_CLIENT_ID),
             clientSecret: asString(env.AUTHZ_CLIENT_SECRET),
-            tokenEndpointAuth: { method: "client_secret_post" },
+            tokenEndpointAuth: { method: "client_secret_basic" },
             postLogoutRedirectURI: `${origin}/`,
             scopes: ["openid", "profile", "email", "groups"],
             pkce: true,
