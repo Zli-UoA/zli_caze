@@ -136,7 +136,7 @@ export default function RoomPage({ roomId, room, principal, canPost }: Props) {
                   }}
                 />
                 <Button onClick={() => void sendComment()} disabled={!isReady || isSending}>
-                  送信
+                  {isSending ? "送信中..." : "送信"}
                 </Button>
               </div>
               <div className="flex justify-end text-sm text-muted-foreground">

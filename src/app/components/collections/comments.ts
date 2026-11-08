@@ -17,6 +17,8 @@ export const createCommentsDB = (roomId: string) =>
       contentType: "application/json",
       batching: false,
     },
+    // SSE is the production live mode. Temporary Cloudflare quick tunnels may
+    // cancel the stream, in which case new comments appear after a reload.
     live: "sse",
     state: commentsState,
   });

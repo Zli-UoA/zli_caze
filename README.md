@@ -85,5 +85,5 @@ For a non-destructive trial, set `cloudflare.name` to a separate Worker such as 
 - Stream access is authorized: `link` rooms allow anonymous reads; `members` rooms require a member or invited guest. Posting always requires AuthZ or a guest session. The route generates the comment id and stamps `user`, `authorId`, `authorType`, and `createdAt` server-side; malformed events are rejected with 400.
 - Guests join via room-scoped invite links (`/join/:token`). Invites have an expiry, optional use limit, and can be revoked. Guest sessions are stored in D1 and scoped to one room.
 - Zli members sign in through AuthZ. The admin group is `zli-officers` (`CAZE_ADMIN_GROUP`), delivered through the AuthZ `groups` scope.
-- Clients use `createStreamDB` from `@durable-streams/state/db`; `preloadCommentsDB()` only preloads the stream and stays connected via SSE. The server creates the stream when an admin creates a room.
+- Clients use `createStreamDB` from `@durable-streams/state/db`; `preloadCommentsDB()` only preloads the stream and stays connected via SSE. The server creates the stream when an admin creates a room. Temporary Cloudflare quick tunnels may cancel the SSE stream; in that case new comments appear after a reload.
 - Old `Room` Durable Object data is not migrated. Existing rooms and comments are discarded; old room URLs return 404.
