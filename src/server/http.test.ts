@@ -11,6 +11,8 @@ describe("safeNext", () => {
     expect(safeNext("https://evil.example/")).toBe("/");
     expect(safeNext("//evil.example/")).toBe("/");
     expect(safeNext("/\\evil.example/")).toBe("/");
+    expect(safeNext("/%2f%2fevil.example")).toBe("/");
+    expect(safeNext("/\u0000evil")).toBe("/");
     expect(safeNext("")).toBe("/");
     expect(safeNext(null)).toBe("/");
   });
