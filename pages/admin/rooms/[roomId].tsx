@@ -1,54 +1,84 @@
+import { SessionExpiredBanner } from "@/components/auth/SessionExpiredBanner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { action, Form, Link, useForm, useRouter } from "@void/react";
+import { formatJst } from "@/lib/formatDate";
+import { action, Form, isVoidActionError, Link, useForm, useRouter } from "@void/react";
 import { useState } from "react";
 import { routeUrl } from "void/routes";
 import type { Props } from "./[roomId].server";
 
 const CopyButton = ({ value }: { value: string }) => {
-  const [copied, setCopied] = useState(false);
+  const [status, setStatus] = useState<"idle" | "copied" | "failed">("idle");
   return (
     <Button
       type="button"
       variant="secondary"
       size="sm"
       onClick={() => {
-        void navigator.clipboard.writeText(value).then(() => {
-          setCopied(true);
-          setTimeout(() => setCopied(false), 1500);
-        });
+        void navigator.clipboard
+          .writeText(value)
+          .then(() => {
+            setStatus("copied");
+            setTimeout(() => setStatus("idle"), 1500);
+          })
+          .catch(() => setStatus("failed"));
       }}
     >
-      {copied ? "コピーしました" : "コピー"}
+      {status === "copied" ? "コピーしました" : status === "failed" ? "コピー失敗" : "コピー"}
     </Button>
   );
 };
 
 export default function AdminRoomPage({ room, invites, inviteToken, origin }: Props) {
   const router = useRouter();
+  const [revokeTarget, setRevokeTarget] = useState<string | null>(null);
+  const [sessionExpired, setSessionExpired] = useState(false);
+
+  const onActionError = (error: unknown) => {
+    if (isVoidActionError(error) && (error.status === 401 || error.status === 403)) {
+      setSessionExpired(true);
+      return;
+    }
+    if (error instanceof Error) window.alert(error.message);
+  };
+
   const inviteForm = useForm(
     "/admin/rooms/:roomId?invite",
     { label: "", expiresInHours: 24, maxUses: 0 },
-    { params: { roomId: room.id } },
+    { params: { roomId: room.id }, onError: onActionError },
   );
   const visibilityForm = useForm(
     "/admin/rooms/:roomId?visibility",
     { visibility: room.visibility === "members" ? "members" : "link" },
-    { params: { roomId: room.id } },
+    { params: { roomId: room.id }, onError: onActionError },
   );
 
   const revoke = async (inviteId: string) => {
-    const result = await action("/admin/rooms/:roomId?revoke", {
-      params: { roomId: room.id },
-      data: { inviteId },
-    });
-    if (!result.ok) {
-      window.alert(result.error.message);
-      return;
+    try {
+      const result = await action("/admin/rooms/:roomId?revoke", {
+        params: { roomId: room.id },
+        data: { inviteId },
+      });
+      setRevokeTarget(null);
+      if (!result.ok) {
+        window.alert(result.error.message);
+        return;
+      }
+      void router.visit(routeUrl("/admin/rooms/:roomId", { params: { roomId: room.id } }));
+    } catch (error) {
+      setRevokeTarget(null);
+      onActionError(error);
     }
-    void router.visit(routeUrl("/admin/rooms/:roomId", { params: { roomId: room.id } }));
   };
 
   const inviteUrl =
@@ -56,11 +86,17 @@ export default function AdminRoomPage({ room, invites, inviteToken, origin }: Pr
 
   return (
     <div className="max-w-5xl mx-auto px-4 py-36 flex flex-col gap-6">
+      {sessionExpired && (
+        <SessionExpiredBanner
+          next={routeUrl("/admin/rooms/:roomId", { params: { roomId: room.id } })}
+        />
+      )}
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold">{room.title}</h1>
           <p className="text-sm text-muted-foreground">
-            ID: {room.id} / {room.visibility === "link" ? "リンク閲覧可" : "メンバー限定"}
+            ID: {room.id} /{" "}
+            {room.visibility === "link" ? "リンク閲覧可" : "メンバー・ゲスト・管理者のみ"}
           </p>
         </div>
         <div className="flex gap-2">
@@ -83,9 +119,14 @@ export default function AdminRoomPage({ room, invites, inviteToken, origin }: Pr
               このURLを企業エンジニア・イベントゲストに共有してください。URLを知っている人はゲストとして参加できます。
             </CardDescription>
           </CardHeader>
-          <CardContent className="flex gap-2">
-            <Input readOnly value={inviteUrl} />
-            <CopyButton value={inviteUrl} />
+          <CardContent className="flex flex-col gap-3">
+            <div className="flex gap-2">
+              <Input readOnly value={inviteUrl} aria-label="ゲスト招待URL" />
+              <CopyButton value={inviteUrl} />
+            </div>
+            <p className="text-xs text-destructive">
+              このURLは画面を離れると再表示できません。必ずコピーしてください。
+            </p>
           </CardContent>
         </Card>
       )}
@@ -94,8 +135,7 @@ export default function AdminRoomPage({ room, invites, inviteToken, origin }: Pr
         <CardHeader>
           <CardTitle>閲覧ポリシー</CardTitle>
           <CardDescription>
-            `link` はURLを知っている人はログイン不要で閲覧できます。`members`
-            はメンバー・ゲスト・管理者だけが閲覧できます。
+            「リンク閲覧可」はURLを知っている人はログイン不要で閲覧できます。「メンバー・ゲスト・管理者のみ」は投稿者として参加している人だけが閲覧できます。
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -115,7 +155,7 @@ export default function AdminRoomPage({ room, invites, inviteToken, origin }: Pr
                 }
               >
                 <option value="link">リンク閲覧可</option>
-                <option value="members">メンバー限定</option>
+                <option value="members">メンバー・ゲスト・管理者のみ</option>
               </select>
             </div>
             <Button type="submit" disabled={visibilityForm.pending}>
@@ -194,8 +234,11 @@ export default function AdminRoomPage({ room, invites, inviteToken, origin }: Pr
                 <p className="mb-3 text-sm text-destructive">{inviteForm.error.message}</p>
               )}
               <Button type="submit" disabled={inviteForm.pending}>
-                招待を発行
+                {inviteForm.pending ? "発行中..." : "招待を発行"}
               </Button>
+              <p className="mt-3 text-xs text-muted-foreground">
+                ゲストのログインは最長12時間です。招待が有効なら同じURLから再参加できます。
+              </p>
             </div>
           </Form>
         </CardContent>
@@ -222,14 +265,17 @@ export default function AdminRoomPage({ room, invites, inviteToken, origin }: Pr
                     <div>
                       <div className="font-medium">{invite.label}</div>
                       <div className="text-xs text-muted-foreground">
-                        期限: {new Date(invite.expiresAt).toLocaleString()} / 利用:{" "}
-                        {invite.usedCount}
+                        期限: {formatJst(invite.expiresAt)} / 利用: {invite.usedCount}
                         {invite.maxUses === 0 ? "（無制限）" : ` / ${invite.maxUses}`}
                         {revoked ? " / 失効済み" : expired ? " / 期限切れ" : ""}
                       </div>
                     </div>
                     {!revoked && !expired && (
-                      <Button variant="secondary" size="sm" onClick={() => void revoke(invite.id)}>
+                      <Button
+                        variant="secondary"
+                        size="sm"
+                        onClick={() => setRevokeTarget(invite.id)}
+                      >
                         失効
                       </Button>
                     )}
@@ -240,6 +286,28 @@ export default function AdminRoomPage({ room, invites, inviteToken, origin }: Pr
           )}
         </CardContent>
       </Card>
+
+      <Dialog open={revokeTarget != null} onOpenChange={(open) => !open && setRevokeTarget(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>この招待を失効しますか？</DialogTitle>
+            <DialogDescription>
+              失効すると、この招待で参加済みのゲストもログアウトされます。この操作は取り消せません。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="secondary" onClick={() => setRevokeTarget(null)}>
+              キャンセル
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => revokeTarget != null && void revoke(revokeTarget)}
+            >
+              失効する
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

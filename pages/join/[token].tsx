@@ -70,21 +70,31 @@ export default function JoinPage({ token, invite, principal }: Props) {
                 name="displayName"
                 value={form.data.displayName}
                 maxLength={30}
+                aria-invalid={form.errors.displayName != null}
+                aria-describedby="displayName-hint displayName-error"
                 onChange={(e) => form.setData("displayName", e.target.value)}
                 required
               />
-              <p className="text-xs text-muted-foreground">1〜30文字。コメントに表示されます。</p>
+              <p id="displayName-hint" className="text-xs text-muted-foreground">
+                1〜30文字。コメントに表示されます。
+              </p>
               {form.errors.displayName != null && (
-                <p className="text-sm text-destructive">{form.errors.displayName}</p>
+                <p id="displayName-error" role="alert" className="text-sm text-destructive">
+                  {form.errors.displayName}
+                </p>
               )}
             </div>
-            {form.error != null && <p className="text-sm text-destructive">{form.error.message}</p>}
+            {form.error != null && (
+              <p role="alert" className="text-sm text-destructive">
+                {form.error.message}
+              </p>
+            )}
             <div className="flex justify-between">
               <Button asChild variant="secondary">
                 <Link href="/">戻る</Link>
               </Button>
               <Button type="submit" disabled={form.pending}>
-                ゲストとして参加
+                {form.pending ? "参加中..." : "ゲストとして参加"}
               </Button>
             </div>
           </Form>

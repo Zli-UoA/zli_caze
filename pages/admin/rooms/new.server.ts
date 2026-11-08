@@ -2,7 +2,7 @@ import { HTTPException } from "hono/http-exception";
 import { defineHandler, type InferProps } from "void";
 import { ValidationError } from "void/handler";
 import { z } from "zod";
-import { redirectTo } from "@/server/http";
+import { redirectTo, requireSameOrigin } from "@/server/http";
 import { getContextPrincipal, requireAdmin, requireAdminPage } from "@/server/principal";
 import { createRoom, recordAdminAction } from "@/server/rooms";
 import type { Room } from "@/server/types";
@@ -21,6 +21,7 @@ export const loader = defineHandler(async (c) => {
 export const action = defineHandler.withValidator({
   body: createRoomSchema,
 })(async (c, { body }) => {
+  requireSameOrigin(c);
   const principal = requireAdmin(await getContextPrincipal(c));
 
   let room: Room;

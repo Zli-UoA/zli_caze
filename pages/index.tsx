@@ -18,15 +18,21 @@ import type { Principal } from "../src/server/types";
 
 const validateRoomId = (input: HTMLInputElement) => {
   if (input.validity.valueMissing) {
-    input.setCustomValidity("部屋IDを入力してください");
+    input.setCustomValidity("ルームIDを入力してください");
   } else if (!/^[A-Za-z0-9_-]{1,64}$/.test(input.value)) {
-    input.setCustomValidity("部屋IDは英数字・_・-の1〜64文字で入力してください");
+    input.setCustomValidity("ルームIDは英数字・_・-の1〜64文字で入力してください");
   } else {
     input.setCustomValidity("");
   }
 
   return input.reportValidity();
 };
+
+const LegacyRoomNotice = () => (
+  <p className="text-xs text-muted-foreground">
+    以前のルームは移行されていません。旧URLは利用できません。
+  </p>
+);
 
 const extractGuestCode = (value: string): string => {
   const trimmed = value.trim();
@@ -96,6 +102,7 @@ export default function IndexPage() {
             </div>
           </CardContent>
         </Card>
+        <LegacyRoomNotice />
       </div>
     );
   }
@@ -118,6 +125,7 @@ export default function IndexPage() {
             </CardAction>
           </CardHeader>
         </Card>
+        <LegacyRoomNotice />
       </div>
     );
   }
@@ -126,18 +134,18 @@ export default function IndexPage() {
     <div className="max-w-3xl mx-auto px-4 py-36 flex flex-col gap-6">
       <Card>
         <CardHeader>
-          <CardTitle>部屋に参加する</CardTitle>
+          <CardTitle>ルームに参加する</CardTitle>
           <CardDescription>
             {principal.isAdmin
-              ? "部屋IDで参加するか、ルーム管理から新しい部屋を作成できます。"
-              : "参加する部屋のIDを入力してください。"}
+              ? "ルームIDで参加するか、ルーム管理から新しいルームを作成できます。"
+              : "参加するルームのIDを入力してください。"}
           </CardDescription>
           <CardAction>
             <Button onClick={joinRoom}>参加する</Button>
           </CardAction>
         </CardHeader>
         <CardContent className="flex flex-col gap-1.5">
-          <Label htmlFor="roomId">部屋ID</Label>
+          <Label htmlFor="roomId">ルームID</Label>
           <Input
             type="text"
             id="roomId"
@@ -171,6 +179,7 @@ export default function IndexPage() {
           </CardHeader>
         </Card>
       )}
+      <LegacyRoomNotice />
     </div>
   );
 }

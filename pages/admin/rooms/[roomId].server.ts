@@ -1,8 +1,13 @@
 import { HTTPException } from "hono/http-exception";
 import { defineHandler, type InferProps } from "void";
 import { z } from "zod";
-import { requestOrigin, redirectTo } from "@/server/http";
-import { createGuestInvite, listGuestInvites, revokeGuestInvite } from "@/server/guest";
+import { requestOrigin, redirectTo, requireSameOrigin } from "@/server/http";
+import {
+  createGuestInvite,
+  getGuestInvite,
+  listGuestInvites,
+  revokeGuestInvite,
+} from "@/server/guest";
 import { getContextPrincipal, requireAdmin, requireAdminPage } from "@/server/principal";
 import { getRoom, recordAdminAction, updateRoomVisibility } from "@/server/rooms";
 
@@ -30,16 +35,19 @@ export const loader = defineHandler(async (c) => {
   const room = await getRoom(roomId);
   if (room == null) throw new HTTPException(404, { message: "ルームが見つかりません" });
 
+  const inviteToken = c.req.query("invite");
+
   return {
     room,
     invites: await listGuestInvites(roomId),
-    inviteToken: c.req.query("invite") ?? null,
+    inviteToken: inviteToken == null || inviteToken === "" ? null : inviteToken,
     origin: requestOrigin(c),
   };
 });
 
 export const actions = {
   invite: defineHandler.withValidator({ body: inviteSchema })(async (c, { body }) => {
+    requireSameOrigin(c);
     const principal = requireAdmin(await getContextPrincipal(c));
     const roomId = c.req.param("roomId");
     if (roomId == null || roomId === "") {
@@ -67,10 +75,16 @@ export const actions = {
   }),
 
   revoke: defineHandler.withValidator({ body: revokeSchema })(async (c, { body }) => {
+    requireSameOrigin(c);
     const principal = requireAdmin(await getContextPrincipal(c));
     const roomId = c.req.param("roomId");
     if (roomId == null || roomId === "") {
       throw new HTTPException(404, { message: "ルームが見つかりません" });
+    }
+
+    const invite = await getGuestInvite(body.inviteId);
+    if (invite == null || invite.roomId !== roomId) {
+      throw new HTTPException(404, { message: "招待が見つかりません" });
     }
 
     await revokeGuestInvite(body.inviteId);
@@ -84,6 +98,7 @@ export const actions = {
   }),
 
   visibility: defineHandler.withValidator({ body: visibilitySchema })(async (c, { body }) => {
+    requireSameOrigin(c);
     const principal = requireAdmin(await getContextPrincipal(c));
     const roomId = c.req.param("roomId");
     if (roomId == null || roomId === "") {

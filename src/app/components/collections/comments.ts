@@ -33,7 +33,7 @@ export const appendComment = async (db: CommentsDB, comment: Comment) => {
       }),
     ),
   );
-  await db.utils.awaitTxId(txid, 30_000);
+  await db.utils.awaitTxId(txid, 15_000);
 };
 
 export type CommentsDB = ReturnType<typeof createCommentsDB>;

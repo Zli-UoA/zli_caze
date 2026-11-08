@@ -2,7 +2,7 @@ import { HTTPException } from "hono/http-exception";
 import { defineHandler, type InferProps } from "void";
 import { ValidationError } from "void/handler";
 import { z } from "zod";
-import { redirectTo } from "@/server/http";
+import { redirectTo, requireSameOrigin } from "@/server/http";
 import { peekGuestInvite, redeemGuestInvite } from "@/server/guest";
 import { getContextPrincipal } from "@/server/principal";
 
@@ -41,6 +41,7 @@ export const loader = defineHandler(async (c) => {
 export const action = defineHandler.withValidator({
   body: joinSchema,
 })(async (c, { body }) => {
+  requireSameOrigin(c);
   const token = c.req.param("token");
   if (token == null || token === "") {
     throw new HTTPException(404, { message: "招待リンクが無効です" });

@@ -2,34 +2,99 @@ import {
   appendComment,
   createCommentsDB,
   preloadCommentsDB,
+  type CommentsDB,
 } from "@/components/collections/comments";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLiveQuery } from "@tanstack/react-db";
-import { useRouter } from "@void/react";
-import { useEffect, useMemo, useState } from "react";
+import { Link, useRouter } from "@void/react";
+import { useEffect, useState } from "react";
 import type * as schema from "../../src/schema/message";
 import type { Props } from "./[roomId].server";
+
+type CommentListProps = {
+  commentsDB: CommentsDB;
+  roomId: string;
+};
+
+const CommentList = ({ commentsDB, roomId }: CommentListProps) => {
+  const commentsCollection = commentsDB.collections.comments;
+  const { data: rawComments, isLoading } = useLiveQuery({
+    query: (q) =>
+      q.from({ comment: commentsCollection }).orderBy(({ comment }) => comment.createdAt, "desc"),
+    queryKey: ["comments", roomId],
+  });
+  const comments = rawComments.map((comment) => ({
+    ...comment,
+    createdAt: new Date(comment.createdAt),
+  }));
+
+  if (isLoading) {
+    return (
+      <>
+        <Skeleton className="h-[74px] mb-[24px] rounded-xl bg-card" />
+        <Skeleton className="h-[74px] mb-[24px] rounded-xl bg-card" />
+        <Skeleton className="h-[74px] mb-[24px] rounded-xl bg-card" />
+      </>
+    );
+  }
+
+  if (comments.length === 0) {
+    return (
+      <p className="py-8 text-center text-sm text-muted-foreground">
+        まだコメントはありません。最初のコメントを投稿してみましょう。
+      </p>
+    );
+  }
+
+  return comments.map((comment) => (
+    <div key={comment.id}>
+      <Card>
+        <CardContent>
+          <div className="flex">
+            <div>{comment.content}</div>
+          </div>
+        </CardContent>
+      </Card>
+      <div className="flex justify-between">
+        <div>{comment.createdAt.toLocaleTimeString()}</div>
+        <div>
+          {comment.user}
+          {comment.authorType === "guest" && (
+            <span className="ml-2 text-xs text-muted-foreground">ゲスト</span>
+          )}
+          {comment.authorType === "admin" && (
+            <span className="ml-2 text-xs text-muted-foreground">管理者</span>
+          )}
+        </div>
+      </div>
+    </div>
+  ));
+};
 
 export default function RoomPage({ roomId, room, principal, canPost }: Props) {
   const router = useRouter();
   const effectiveRoomId = roomId;
 
   const [commentInput, setCommentInput] = useState("");
+  const [commentsDB, setCommentsDB] = useState<CommentsDB | null>(null);
+  const [generation, setGeneration] = useState(0);
   const [isReady, setIsReady] = useState(false);
   const [isSending, setIsSending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const commentsDB = useMemo(() => createCommentsDB(effectiveRoomId), [effectiveRoomId]);
-  const commentsCollection = commentsDB.collections.comments;
-
   useEffect(() => {
     let cancelled = false;
+    const db = createCommentsDB(effectiveRoomId);
+    setCommentsDB(db);
+    setGeneration((value) => value + 1);
     setIsReady(false);
     setError(null);
-    preloadCommentsDB(commentsDB)
+
+    preloadCommentsDB(db)
       .then(() => {
         if (!cancelled) setIsReady(true);
       })
@@ -37,21 +102,12 @@ export default function RoomPage({ roomId, room, principal, canPost }: Props) {
         console.error(reason);
         if (!cancelled) setError("コメントの読み込みに失敗しました");
       });
+
     return () => {
       cancelled = true;
-      commentsDB.close();
+      db.close();
     };
-  }, [commentsDB]);
-
-  const { data: rawComments, isLoading } = useLiveQuery({
-    query: (q) =>
-      q.from({ comment: commentsCollection }).orderBy(({ comment }) => comment.createdAt, "desc"),
-    queryKey: ["comments", effectiveRoomId],
-  });
-  const comments = rawComments.map((comment) => ({
-    ...comment,
-    createdAt: new Date(comment.createdAt),
-  }));
+  }, [effectiveRoomId]);
 
   const openLogin = () => {
     const next = `/room/${encodeURIComponent(effectiveRoomId)}`;
@@ -63,8 +119,8 @@ export default function RoomPage({ roomId, room, principal, canPost }: Props) {
       openLogin();
       return;
     }
+    if (commentsDB == null || !isReady || isSending) return;
 
-    if (!isReady || isSending) return;
     const content = commentInput.trim();
     if (content === "") return;
 
@@ -92,15 +148,16 @@ export default function RoomPage({ roomId, room, principal, canPost }: Props) {
       setError(null);
     } catch (reason) {
       console.error(reason);
-      setCommentInput(content);
-      setError("送信に失敗しました。もう一度お試しください");
+      // The append may have succeeded even when the live confirmation timed
+      // out. Do not restore the input and invite a duplicate post.
+      setError("送信結果を確認できませんでした。再読み込みして確認してください");
     } finally {
       setIsSending(false);
     }
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-36 flex flex-col gap-8">
+    <div className="max-w-3xl mx-auto px-4 py-20 sm:py-36 flex flex-col gap-8">
       <Card>
         <CardHeader>
           <CardTitle>{room.title}</CardTitle>
@@ -109,7 +166,8 @@ export default function RoomPage({ roomId, room, principal, canPost }: Props) {
           <div className="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
             <span>部屋ID: {effectiveRoomId}</span>
             <span>
-              閲覧: {room.visibility === "link" ? "リンクを知っている人" : "メンバー・ゲストのみ"}
+              閲覧:{" "}
+              {room.visibility === "link" ? "リンクを知っている人" : "メンバー・ゲスト・管理者のみ"}
             </span>
             {principal != null && (
               <span>
@@ -120,75 +178,88 @@ export default function RoomPage({ roomId, room, principal, canPost }: Props) {
           </div>
           {canPost ? (
             <>
-              <div className="flex gap-6">
-                <Input
-                  type="text"
-                  id="comment"
-                  autoComplete="off"
-                  required
-                  value={commentInput}
-                  maxLength={100}
-                  onChange={(e) => setCommentInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && e.ctrlKey) {
-                      void sendComment();
-                    }
-                  }}
-                />
-                <Button onClick={() => void sendComment()} disabled={!isReady || isSending}>
-                  {isSending ? "送信中..." : "送信"}
-                </Button>
+              <div className="flex flex-col gap-1.5">
+                <Label htmlFor="comment" className="sr-only">
+                  コメント
+                </Label>
+                <div className="flex gap-6">
+                  <Input
+                    type="text"
+                    id="comment"
+                    autoComplete="off"
+                    required
+                    value={commentInput}
+                    maxLength={100}
+                    onChange={(e) => setCommentInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                        void sendComment();
+                      }
+                    }}
+                  />
+                  <Button
+                    onClick={() => void sendComment()}
+                    disabled={!isReady || isSending || commentInput.trim() === ""}
+                  >
+                    {isSending ? "送信中..." : "送信"}
+                  </Button>
+                </div>
               </div>
               <div className="flex justify-end text-sm text-muted-foreground">
-                Ctrl + Enter で送信
+                Ctrl / Cmd + Enter で送信
               </div>
             </>
           ) : (
             <div className="flex flex-wrap items-center gap-3">
               <span className="text-sm text-muted-foreground">
-                コメントするには AuthZ ログインまたはゲスト参加が必要です。
+                {principal == null
+                  ? "コメントするには AuthZ ログインまたはゲスト参加が必要です。"
+                  : "このルームは閲覧のみです。"}
               </span>
-              <Button onClick={openLogin}>ログインする</Button>
+              {principal == null && (
+                <>
+                  <Button onClick={openLogin}>ログインする</Button>
+                  <Button asChild variant="secondary">
+                    <Link href="/">招待コードで参加</Link>
+                  </Button>
+                </>
+              )}
             </div>
           )}
           {error != null && (
-            <div role="alert" className="text-sm text-destructive">
-              {error}
+            <div
+              role="alert"
+              className="flex flex-wrap items-center gap-3 text-sm text-destructive"
+            >
+              <span>{error}</span>
+              <Button variant="secondary" size="sm" onClick={() => window.location.reload()}>
+                再読み込み
+              </Button>
+              <Button asChild variant="secondary" size="sm">
+                <Link href={`/login?next=${encodeURIComponent(`/room/${effectiveRoomId}`)}`}>
+                  ログインし直す
+                </Link>
+              </Button>
             </div>
           )}
         </CardContent>
       </Card>
       <div className="flex flex-col gap-4">
-        {isLoading && (
-          <>
-            <Skeleton className="h-[74px] mb-[24px] rounded-xl bg-card" />
-            <Skeleton className="h-[74px] mb-[24px] rounded-xl bg-card" />
-            <Skeleton className="h-[74px] mb-[24px] rounded-xl bg-card" />
-          </>
+        {commentsDB == null || !isReady ? (
+          error == null ? (
+            <>
+              <Skeleton className="h-[74px] mb-[24px] rounded-xl bg-card" />
+              <Skeleton className="h-[74px] mb-[24px] rounded-xl bg-card" />
+              <Skeleton className="h-[74px] mb-[24px] rounded-xl bg-card" />
+            </>
+          ) : null
+        ) : (
+          <CommentList
+            key={`${effectiveRoomId}:${generation}`}
+            commentsDB={commentsDB}
+            roomId={effectiveRoomId}
+          />
         )}
-        {comments.map((comment) => (
-          <div key={comment.id}>
-            <Card className={comment.isOptimistic ? "opacity-50" : ""}>
-              <CardContent>
-                <div className="flex">
-                  <div>{comment.content}</div>
-                </div>
-              </CardContent>
-            </Card>
-            <div className="flex justify-between">
-              <div>{comment.createdAt.toLocaleTimeString()}</div>
-              <div>
-                {comment.user}
-                {comment.authorType === "guest" && (
-                  <span className="ml-2 text-xs text-muted-foreground">ゲスト</span>
-                )}
-                {comment.authorType === "admin" && (
-                  <span className="ml-2 text-xs text-muted-foreground">管理者</span>
-                )}
-              </div>
-            </div>
-          </div>
-        ))}
       </div>
     </div>
   );

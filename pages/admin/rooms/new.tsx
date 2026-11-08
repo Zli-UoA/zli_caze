@@ -1,29 +1,39 @@
+import { SessionExpiredBanner } from "@/components/auth/SessionExpiredBanner";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Form, Link, useForm } from "@void/react";
-import { useFormStatus } from "react-dom";
+import { Form, isVoidActionError, Link, useForm } from "@void/react";
+import { useState } from "react";
 import type { Props } from "./new.server";
 
-const SubmitButton = ({ pending }: { pending: boolean }) => {
-  const status = useFormStatus();
-  return (
-    <Button type="submit" disabled={pending || status.pending}>
-      作成する
-    </Button>
-  );
-};
+const SubmitButton = ({ pending }: { pending: boolean }) => (
+  <Button type="submit" disabled={pending}>
+    {pending ? "作成中..." : "作成する"}
+  </Button>
+);
 
 export default function NewRoomPage(_props: Props) {
-  const form = useForm("/admin/rooms/new", {
-    title: "",
-    id: "",
-    visibility: "link",
-  });
+  const [sessionExpired, setSessionExpired] = useState(false);
+  const form = useForm(
+    "/admin/rooms/new",
+    {
+      title: "",
+      id: "",
+      visibility: "link",
+    },
+    {
+      onError: (error) => {
+        if (isVoidActionError(error) && (error.status === 401 || error.status === 403)) {
+          setSessionExpired(true);
+        }
+      },
+    },
+  );
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-36">
+    <div className="max-w-3xl mx-auto px-4 py-36 flex flex-col gap-4">
+      {sessionExpired && <SessionExpiredBanner next="/admin/rooms/new" />}
       <Card>
         <CardHeader>
           <CardTitle>新しいルームを作成</CardTitle>

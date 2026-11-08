@@ -14,6 +14,9 @@ export default function AdminRoomsPage({ rooms, q }: Props) {
           <p className="text-sm text-muted-foreground">
             ルームの一覧・作成・ゲスト招待を管理します。
           </p>
+          <p className="mt-2 text-xs text-muted-foreground">
+            以前のルームは移行されていません。旧ルームIDは再利用できません。
+          </p>
         </div>
         <Button asChild>
           <Link href="/admin/rooms/new">新しいルームを作成</Link>
@@ -23,7 +26,7 @@ export default function AdminRoomsPage({ rooms, q }: Props) {
       <Card>
         <CardHeader>
           <CardTitle>ルーム一覧</CardTitle>
-          <CardDescription>全 {rooms.length} 件</CardDescription>
+          <CardDescription>表示中 {rooms.length} 件（最大100件）</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <form method="get" action="/admin/rooms" className="flex gap-2">
@@ -34,7 +37,11 @@ export default function AdminRoomsPage({ rooms, q }: Props) {
           </form>
 
           {rooms.length === 0 ? (
-            <p className="text-sm text-muted-foreground">ルームがありません。</p>
+            <p className="text-sm text-muted-foreground">
+              {q === ""
+                ? "ルームがありません。"
+                : "条件に一致するルームがありません。検索をクリアしてください。"}
+            </p>
           ) : (
             <div className="flex flex-col divide-y">
               {rooms.map((room) => (
@@ -46,7 +53,7 @@ export default function AdminRoomsPage({ rooms, q }: Props) {
                     <div className="font-medium">{room.title}</div>
                     <div className="text-xs text-muted-foreground">
                       ID: {room.id} / {room.visibility === "link" ? "リンク閲覧可" : "メンバー限定"}{" "}
-                      / {room.status === "active" ? "公開中" : "アーカイブ"}
+                      / {room.status === "active" ? "有効" : "アーカイブ"}
                     </div>
                   </div>
                   <div className="flex gap-2">
