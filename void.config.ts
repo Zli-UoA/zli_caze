@@ -30,6 +30,9 @@ export default defineConfig({
     name: "zli-caze",
     compatibility_date: "2026-02-24",
     compatibility_flags: ["nodejs_compat"],
+    workers_dev: true,
+    preview_urls: true,
+    routes: [{ pattern: "caze.zli.works", custom_domain: true }],
   },
   worker: {
     compatibility_date: "2026-02-24",
