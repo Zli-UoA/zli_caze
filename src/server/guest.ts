@@ -3,6 +3,7 @@ import { db } from "void/db";
 import { deleteCookie, getCookie, setCookie } from "hono/cookie";
 import type { CloudContext } from "void";
 import { guestInvites, guestSessions, rooms } from "@schema";
+import { normalizeGuestName } from "./displayName";
 import { isSecureRequest } from "./http";
 import type { GuestPrincipal } from "./types";
 
@@ -73,8 +74,8 @@ export const redeemGuestInvite = async (
   token: string,
   displayName: string,
 ): Promise<RedeemResult> => {
-  const name = displayName.trim();
-  if (name.length === 0 || name.length > 30) return { ok: false, reason: "invalid-name" };
+  const name = normalizeGuestName(displayName);
+  if (name == null) return { ok: false, reason: "invalid-name" };
 
   const found = await peekGuestInvite(token);
   if (found == null) return { ok: false, reason: "invalid" };
@@ -157,6 +158,11 @@ export const getGuestSession = async (c: CloudContext): Promise<GuestPrincipal |
   };
 };
 
+export const hasGuestSessionCookie = (c: CloudContext): boolean => {
+  const token = getCookie(c, guestCookieName(c));
+  return token != null && token !== "";
+};
+
 export const clearGuestSession = async (c: CloudContext): Promise<void> => {
   const token = getCookie(c, guestCookieName(c));
   if (token != null && token !== "") {
@@ -198,6 +204,11 @@ export type GuestInviteSummary = Pick<
   typeof guestInvites.$inferSelect,
   "id" | "label" | "expiresAt" | "maxUses" | "usedCount" | "createdAt" | "revokedAt"
 >;
+
+export const getGuestInvite = async (id: string) => {
+  const [invite] = await db.select().from(guestInvites).where(eq(guestInvites.id, id)).limit(1);
+  return invite ?? null;
+};
 
 export const listGuestInvites = async (roomId: string): Promise<GuestInviteSummary[]> =>
   db

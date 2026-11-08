@@ -65,6 +65,7 @@ export const guestSessions = sqliteTable(
   (table) => [
     uniqueIndex("guest_sessions_token_hash_idx").on(table.tokenHash),
     index("guest_sessions_room_idx").on(table.roomId, table.expiresAt),
+    index("guest_sessions_invite_idx").on(table.inviteId),
   ],
 );
 

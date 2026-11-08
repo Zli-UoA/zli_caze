@@ -33,7 +33,12 @@ export const ensureRoomStream = async (c: CloudContext, roomId: string): Promise
     c.env as unknown as DefaultAuthEnv,
   );
 
-  if (!response.ok && response.status !== 409) {
+  if (response.status === 409) {
+    // An old stream can survive a Worker/DO cleanup. Reusing it would expose
+    // comments from a discarded room, so require a different room ID.
+    throw new Error("同じルームIDの既存ストリームがあります。別のルームIDを指定してください");
+  }
+  if (!response.ok) {
     throw new Error(`ルームのストリーム作成に失敗しました (${response.status})`);
   }
 };
@@ -105,12 +110,17 @@ export const recordAdminAction = async (input: {
   targetId?: string;
   detail?: string;
 }): Promise<void> => {
-  await db.insert(adminAuditLog).values({
-    id: crypto.randomUUID(),
-    actorUserId: input.actorUserId,
-    action: input.action,
-    targetId: input.targetId ?? null,
-    detail: input.detail ?? null,
-    createdAt: new Date().toISOString(),
-  });
+  try {
+    await db.insert(adminAuditLog).values({
+      id: crypto.randomUUID(),
+      actorUserId: input.actorUserId,
+      action: input.action,
+      targetId: input.targetId ?? null,
+      detail: input.detail ?? null,
+      createdAt: new Date().toISOString(),
+    });
+  } catch (error) {
+    // Auditing must not turn a successful room or invite operation into a 500.
+    console.error("Failed to write admin audit log", error);
+  }
 };

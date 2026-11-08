@@ -2,7 +2,9 @@ import { HTTPException } from "hono/http-exception";
 import type { CloudContext } from "void";
 import { getUser } from "void/auth";
 import { getDevUser } from "./devAuth";
-import { getGuestSession } from "./guest";
+import { sanitizeDisplayName } from "./displayName";
+import { htmlErrorResponse } from "./errorPage";
+import { clearGuestSession, getGuestSession, hasGuestSessionCookie } from "./guest";
 import { redirectTo } from "./http";
 import type { Principal } from "./types";
 
@@ -12,6 +14,9 @@ export const getPrincipal = async (c: CloudContext): Promise<Principal | null> =
 
   const user = getUser() ?? c.get("user") ?? null;
   if (user != null) {
+    // A member who previously joined as a guest must not fall back to the guest
+    // identity after the member session expires.
+    if (hasGuestSessionCookie(c)) await clearGuestSession(c);
     return {
       type: "member",
       userId: user.id,
@@ -50,23 +55,36 @@ export const requireAdminPage = async (c: CloudContext) => {
   const principal = await getContextPrincipal(c);
   if (principal == null) {
     const url = new URL(c.req.url);
-    redirectTo(c, `/login?next=${encodeURIComponent(`${url.pathname}${url.search}`)}`);
+    return redirectTo(c, `/login?next=${encodeURIComponent(`${url.pathname}${url.search}`)}`);
   }
-  return requireAdmin(principal);
+  if (principal.type !== "member" || !principal.isAdmin) {
+    throw new HTTPException(403, {
+      res: htmlErrorResponse(
+        403,
+        "管理者権限が必要です",
+        "この画面は Zli の管理者だけが利用できます。トップページに戻ってください。",
+      ),
+    });
+  }
+  return principal;
 };
 
 export const commentAuthor = (
   principal: Principal,
 ): { user: string; authorId: string; authorType: "member" | "guest" | "admin" } => {
+  const user = sanitizeDisplayName(
+    principal.name,
+    principal.type === "guest" ? "ゲスト" : "メンバー",
+  );
   if (principal.type === "guest") {
     return {
-      user: principal.name,
+      user,
       authorId: principal.sessionId,
       authorType: "guest",
     };
   }
   return {
-    user: principal.name,
+    user,
     authorId: principal.userId,
     authorType: principal.isAdmin ? "admin" : "member",
   };

@@ -15,13 +15,30 @@ describe("stripProtectedUserFields", () => {
     expect(stripProtectedUserFields(profile, "/oauth2/callback/authz")).toEqual(profile);
   });
 
-  it("removes AuthZ profile fields from ordinary updates", () => {
-    const result = stripProtectedUserFields(profile, "/update-user");
-    expect(result).toEqual({ name: "Member" });
+  it("overwrites protected fields with undefined for ordinary updates", () => {
+    const result = stripProtectedUserFields({ ...profile, plan: "free" }, "/update-user");
+    expect(result.isAdmin).toBeUndefined();
+    expect(result.groups).toBeUndefined();
+    expect(result.authzSub).toBeUndefined();
+    expect(result.username).toBeUndefined();
+    expect(result.name).toBeUndefined();
+    expect(result.plan).toBe("free");
   });
 
   it("also strips fields when the path is unknown", () => {
-    expect(stripProtectedUserFields(profile, "")).toEqual({ name: "Member" });
+    const result = stripProtectedUserFields(profile, "");
+    expect(result.isAdmin).toBeUndefined();
+    expect(result.name).toBeUndefined();
+  });
+
+  it("survives Better Auth's merge with the original payload", () => {
+    const original = { isAdmin: false, name: "Member" };
+    const merged = {
+      ...original,
+      ...stripProtectedUserFields({ isAdmin: true, name: "Admin" }, "/update-user"),
+    };
+    expect(merged.isAdmin).toBeUndefined();
+    expect(merged.name).toBeUndefined();
   });
 });
 

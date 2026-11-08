@@ -1,0 +1,1 @@
+CREATE INDEX `guest_sessions_invite_idx` ON `guest_sessions` (`invite_id`);

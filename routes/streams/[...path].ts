@@ -6,6 +6,7 @@ import {
   readTextWithLimit,
 } from "@/lib/streamProxy";
 import { parseCommentEvent } from "@/lib/streamEvent";
+import { comment as commentSchema } from "src/schema/message";
 import { requireSameOrigin } from "@/server/http";
 import { canPostComment, canViewRoom } from "@/server/permissions";
 import { commentAuthor, getContextPrincipal } from "@/server/principal";
@@ -72,7 +73,12 @@ export const POST = defineHandler(async (c) => {
       isOptimistic: false,
     },
   };
-  const body = JSON.stringify(result.wrapped ? [event] : event);
+  const finalComment = commentSchema.safeParse(event.value);
+  if (!finalComment.success) {
+    return c.text("Comment author is invalid", { status: 400 });
+  }
+  const safeEvent = { ...event, value: finalComment.data };
+  const body = JSON.stringify(result.wrapped ? [safeEvent] : safeEvent);
 
   return streamsHandler(
     new Request(c.req.raw.url, {
