@@ -8,6 +8,7 @@ const comment = {
   user: "alice",
   authorId: "user-1",
   authorType: "member" as const,
+  authorImage: "https://avater.zliusercontent.com/avatars/a.png",
   isOptimistic: false,
 };
 

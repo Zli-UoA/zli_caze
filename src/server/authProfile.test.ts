@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vite-plus/test";
-import { isOAuthCallbackPath, stripProtectedUserFields } from "./authProfile";
+import {
+  isOAuthCallbackPath,
+  normalizeProfileImage,
+  stripProtectedUserFields,
+} from "./authProfile";
 
 const profile = {
   name: "Member",
@@ -7,6 +11,7 @@ const profile = {
   username: "member",
   isAdmin: true,
   groups: '["zli-officers"]',
+  image: "https://avater.zliusercontent.com/avatars/2f1e0f8e-6a0d-4f3b-9f5a-1c2d3e4f5a6b.png",
 };
 
 describe("stripProtectedUserFields", () => {
@@ -22,6 +27,7 @@ describe("stripProtectedUserFields", () => {
     expect(result.authzSub).toBeUndefined();
     expect(result.username).toBeUndefined();
     expect(result.name).toBeUndefined();
+    expect(result.image).toBeUndefined();
     expect(result.plan).toBe("free");
   });
 
@@ -39,6 +45,25 @@ describe("stripProtectedUserFields", () => {
     };
     expect(merged.isAdmin).toBeUndefined();
     expect(merged.name).toBeUndefined();
+  });
+});
+
+describe("normalizeProfileImage", () => {
+  it("accepts http(s) avatar URLs", () => {
+    expect(normalizeProfileImage("https://avater.zliusercontent.com/avatars/a.png")).toBe(
+      "https://avater.zliusercontent.com/avatars/a.png",
+    );
+    expect(normalizeProfileImage("http://localhost:5173/api/avatars/a")).toBe(
+      "http://localhost:5173/api/avatars/a",
+    );
+  });
+
+  it("rejects missing, oversized, and non-http URLs", () => {
+    expect(normalizeProfileImage(undefined)).toBe("");
+    expect(normalizeProfileImage("")).toBe("");
+    expect(normalizeProfileImage("javascript:alert(1)")).toBe("");
+    expect(normalizeProfileImage("ftp://example.com/a.png")).toBe("");
+    expect(normalizeProfileImage(`https://example.com/${"a".repeat(2048)}`)).toBe("");
   });
 });
 

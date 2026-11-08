@@ -180,7 +180,8 @@ export default defineAuth(({ defaults, env }) => ({
 - `genericOAuth` の callback は `/api/auth/callback/authz`。AuthZ の Redirect URI と完全一致させる。
 - `tokenEndpointAuth` は confidential client の登録方式に合わせる。AuthZ の Caze client は `client_secret_basic` で登録されているため basic を使う。`client_secret_post` だと `client registered for client_secret_basic cannot use client_secret_post` で token 交換に失敗する。
 - `mapProfileToUser` が返す `email` は AuthZ の `email` をそのまま使う。`emailVerified` は true にしない。
-- `isAdmin` / `groups` / `authzSub` / `username` は `input: true` にして AuthZ プロフィールから更新し、`databaseHooks.user.update.before` で OAuth callback 以外からの更新を剥がす。`/update-user` による権限昇格を防ぐため。
+- `profile` scope の `picture` claim を `user.image` に保存する。画像 URL は http(s) だけを受け付け、未設定なら空文字にして次回ログイン時に消去する。
+- `isAdmin` / `groups` / `authzSub` / `username` / `image` は `input: true` にして AuthZ プロフィールから更新し、`databaseHooks.user.update.before` で OAuth callback 以外からの更新を剥がす。`/update-user` による権限昇格や任意 URL のアイコン設定を防ぐため。
 - `better-auth` を `package.json` の依存に明示する（Void の推移依存に頼らない）。
 - `void/auth` の `getUser()` がストリームルートでも動くことを確認する。動かない場合は `auth.api.getSession({ headers })` に切り替える。
 
@@ -313,6 +314,7 @@ Better Auth の `user` / `session` / `account` / `verification` テーブルは 
 - `user.id`: Caze 内の安定 ID。コメントの `authorId` に使う。
 - `user.name`: AuthZ の表示名。
 - `user.username`: AuthZ の `preferred_username`。
+- `user.image`: AuthZ の `picture`（アイコン URL）。未設定時は null。
 - `user.isAdmin`: `groups` に `CAZE_ADMIN_GROUP`（例: `zli-officers`）が含まれるか。
 - `user.groups`: デバッグ用に JSON 文字列で保存（表示には使わない）。
 - `account` テーブル: AuthZ の `sub` / issuer / access token など Better Auth 管理。
@@ -330,12 +332,14 @@ export const comment = z.object({
   user: z.string().min(1).max(100),
   authorId: z.string().min(1).max(128),
   authorType: z.enum(["member", "guest", "admin"]),
+  authorImage: z.string().max(2048).nullable().optional(),
   isOptimistic: z.boolean(),
 });
 ```
 
 - 新規コメントはサーバーが `user` / `authorId` / `authorType` / `createdAt` / `isOptimistic` を上書きする。
 - `user` は投稿時点の表示名を保存する。後で AuthZ の表示名を変えても過去コメントの表示名は変えない。
+- `authorImage` は投稿時点の AuthZ アイコン URL を保存する。ゲスト・未設定は null。アイコンが後から削除されて URL が失効した場合は、UI が表示名の頭文字にフォールバックする。
 - クライアントは楽観行を挿入せず、サーバーが生成したコメント ID のイベントを待つ。`user` / `authorId` / `authorType` はサーバーが確定する。
 - 既存ルームは破棄するため、旧コメントとの互換性は考慮しない。
 - クライアントが送った `user` は楽観表示にだけ使い、サーバーは無視する。
@@ -367,7 +371,7 @@ export const comment = z.object({
 
 ### 5.3 レイアウト / 既存 UI の変更
 
-- `pages/layout.tsx`: `useShared().principal` でヘッダーを描画。表示名、ログイン/ログアウト、管理者メニュー。
+- `pages/layout.tsx`: `useShared().principal` でヘッダーを描画。アイコン、表示名、ログイン/ログアウト、管理者メニュー。
 - `pages/index.tsx`: `useShared().principal` で表示を切り替える。部屋 ID 入力はメンバー/管理者のみ。匿名時はログインカード。ゲストは自分のルームへのリンクのみ。
 - `pages/room/[roomId].tsx`: `username` の localStorage 依存を削除。`principal.name` を表示。`link` ルームでは未ログインでも閲覧でき、投稿欄の代わりにログイン導線を出す。
 - `src/app/lib/username.tsx`: 削除、または AuthZ プロフィール表示に置き換える。

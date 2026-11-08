@@ -30,6 +30,7 @@ export const getDevUser = (c: CloudContext): MemberPrincipal | null => {
       type: "member",
       userId: `dev:${name}`,
       name,
+      image: null,
       isAdmin: parsed.isAdmin === true,
     };
   } catch {

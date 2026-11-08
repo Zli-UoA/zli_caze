@@ -155,6 +155,7 @@ export const getGuestSession = async (c: CloudContext): Promise<GuestPrincipal |
     inviteId: session.inviteId,
     roomId: session.roomId,
     name: session.displayName,
+    image: null,
   };
 };
 

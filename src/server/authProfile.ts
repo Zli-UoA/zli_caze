@@ -1,11 +1,42 @@
-export const PROTECTED_USER_FIELDS = ["name", "authzSub", "username", "isAdmin", "groups"] as const;
+export const PROTECTED_USER_FIELDS = [
+  "name",
+  "authzSub",
+  "username",
+  "isAdmin",
+  "groups",
+  "image",
+] as const;
 
 export const isOAuthCallbackPath = (path: string): boolean =>
   path === "/callback/:id" || path.startsWith("/callback/") || path.startsWith("/oauth2/callback/");
 
 /**
+ * AuthZ shares the profile icon as the OIDC `picture` claim. Only accept a
+ * bounded http(s) URL; an empty string means the user has no icon and clears
+ * any previously stored image on the next sign-in.
+ */
+export const normalizeProfileImage = (value: unknown): string => {
+  if (typeof value !== "string") return "";
+  const trimmed = value.trim();
+  if (trimmed === "" || trimmed.length > 2048) return "";
+
+  try {
+    const url = new URL(trimmed);
+    const isLocalHttp =
+      url.protocol === "http:" && (url.hostname === "localhost" || url.hostname === "127.0.0.1");
+    if (url.protocol !== "https:" && !isLocalHttp) return "";
+    if (url.username !== "" || url.password !== "") return "";
+    const normalized = url.toString();
+    return normalized.length <= 2048 ? normalized : "";
+  } catch {
+    return "";
+  }
+};
+
+/**
  * AuthZ profile fields may only be written from the verified OAuth callback.
- * Ordinary update-user requests must not be able to set isAdmin or groups.
+ * Ordinary update-user requests must not be able to set isAdmin, groups, or an
+ * arbitrary image URL.
  */
 export const stripProtectedUserFields = (
   user: Record<string, unknown>,

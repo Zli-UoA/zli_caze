@@ -1,6 +1,6 @@
 import { genericOAuth } from "better-auth/plugins";
 import { defineAuth } from "void/auth";
-import { stripProtectedUserFields } from "./src/server/authProfile";
+import { normalizeProfileImage, stripProtectedUserFields } from "./src/server/authProfile";
 import { installDiscoveryCache } from "./src/server/discoveryCache";
 import { sanitizeDisplayName } from "./src/server/displayName";
 
@@ -110,6 +110,7 @@ export default defineAuth(({ defaults, env, request }) => {
                 name,
                 username,
                 email,
+                image: normalizeProfileImage(profile.picture),
                 isAdmin: groups.includes(adminGroup),
                 groups: JSON.stringify(groups),
               };

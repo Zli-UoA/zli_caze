@@ -1,5 +1,6 @@
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Logo } from "@/components/logo";
+import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Link, useRouter, useShared } from "@void/react";
 import { useState, type ReactNode } from "react";
@@ -53,9 +54,12 @@ const Header = ({ principal }: { principal: Principal | null }) => {
               </Button>
             ) : (
               <>
-                <span className="hidden max-w-[10rem] truncate text-brand-light/80 sm:inline">
-                  {principal.type === "guest" ? "ゲスト: " : ""}
-                  {principal.name}
+                <span className="flex min-w-0 items-center gap-2">
+                  <Avatar name={principal.name} src={principal.image} className="size-7 text-xs" />
+                  <span className="sr-only max-w-[10rem] truncate text-brand-light/80 sm:not-sr-only">
+                    {principal.type === "guest" ? "ゲスト: " : ""}
+                    {principal.name}
+                  </span>
                 </span>
                 <Button
                   variant="secondary"

@@ -1,6 +1,7 @@
 import { HTTPException } from "hono/http-exception";
 import type { CloudContext } from "void";
 import { getUser } from "void/auth";
+import { normalizeProfileImage } from "./authProfile";
 import { getDevUser } from "./devAuth";
 import { sanitizeDisplayName } from "./displayName";
 import { htmlErrorResponse } from "./errorPage";
@@ -21,6 +22,7 @@ export const getPrincipal = async (c: CloudContext): Promise<Principal | null> =
       type: "member",
       userId: user.id,
       name: user.name,
+      image: normalizeProfileImage(user.image) || null,
       isAdmin: user.isAdmin === true,
     };
   }
@@ -71,7 +73,12 @@ export const requireAdminPage = async (c: CloudContext) => {
 
 export const commentAuthor = (
   principal: Principal,
-): { user: string; authorId: string; authorType: "member" | "guest" | "admin" } => {
+): {
+  user: string;
+  authorId: string;
+  authorType: "member" | "guest" | "admin";
+  authorImage: string | null;
+} => {
   const user = sanitizeDisplayName(
     principal.name,
     principal.type === "guest" ? "ゲスト" : "メンバー",
@@ -81,11 +88,13 @@ export const commentAuthor = (
       user,
       authorId: principal.sessionId,
       authorType: "guest",
+      authorImage: null,
     };
   }
   return {
     user,
     authorId: principal.userId,
     authorType: principal.isAdmin ? "admin" : "member",
+    authorImage: principal.image,
   };
 };
