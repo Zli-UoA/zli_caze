@@ -316,7 +316,7 @@ Better Auth の `user` / `session` / `account` / `verification` テーブルは 
 - `user.id`: Caze 内の安定 ID。コメントの `authorId` に使う。
 - `user.name`: AuthZ の表示名。
 - `user.username`: AuthZ の `preferred_username`。
-- `user.image`: AuthZ の `picture`（アイコン URL）。未設定時は空文字で保存し、`Principal` では `null` に正規化する。
+- `user.image`: AuthZ の `picture`（アイコン URL）。未設定時は空文字で保存し、`Principal` では `null` に正規化する。AuthZ 側のアイコン変更は次回 Caze ログイン時に反映され、セッション cookie cache が残る間は古い URL を表示することがある。
 - `user.isAdmin`: `groups` に `CAZE_ADMIN_GROUP`（例: `zli-officers`）が含まれるか。
 - `user.groups`: デバッグ用に JSON 文字列で保存（表示には使わない）。
 - `account` テーブル: AuthZ の `sub` / issuer / access token など Better Auth 管理。
