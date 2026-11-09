@@ -38,9 +38,9 @@ const Header = ({ principal }: { principal: Principal | null }) => {
   return (
     <header className="bg-brand-dark text-brand-light fixed top-0 left-0 right-0 w-full z-10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16 items-center gap-3">
+        <div className="flex justify-between h-16 items-center gap-2 sm:gap-3">
           <Link href="/" className="flex shrink-0 items-center">
-            <Logo className="h-8 w-auto" />
+            <Logo className="h-7 w-auto sm:h-8" />
           </Link>
           <nav className="flex min-w-0 items-center gap-2 text-sm sm:gap-3">
             {principal?.type === "member" && principal.isAdmin && (
@@ -55,8 +55,16 @@ const Header = ({ principal }: { principal: Principal | null }) => {
             ) : (
               <>
                 <span className="flex min-w-0 items-center gap-2">
-                  <Avatar name={principal.name} src={principal.image} className="size-7 text-xs" />
-                  <span className="sr-only max-w-[10rem] truncate text-brand-light/80 sm:not-sr-only">
+                  <Avatar
+                    name={principal.name}
+                    src={principal.image}
+                    loading="eager"
+                    className="size-6 text-xs sm:size-7"
+                  />
+                  <span
+                    className="max-w-[10rem] truncate text-brand-light/80 max-sm:sr-only"
+                    title={principal.name}
+                  >
                     {principal.type === "guest" ? "ゲスト: " : ""}
                     {principal.name}
                   </span>

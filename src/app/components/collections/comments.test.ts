@@ -32,4 +32,14 @@ describe("commentsState", () => {
     expect(event.key).toBe(comment.id);
     expect(event.headers.operation).toBe("delete");
   });
+
+  it("accepts comments created before authorImage existed", () => {
+    const { authorImage: _authorImage, ...legacyComment } = comment;
+    const event = commentsState.comments.insert({
+      value: legacyComment,
+      headers: { txid: "tx-2" },
+    });
+
+    expect(event.value).not.toHaveProperty("authorImage");
+  });
 });

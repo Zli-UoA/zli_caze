@@ -21,6 +21,18 @@ type CommentListProps = {
   roomId: string;
 };
 
+const CommentSkeleton = () => (
+  <Card>
+    <CardContent className="flex items-start gap-3">
+      <Skeleton className="size-9 shrink-0 rounded-full bg-card" />
+      <div className="min-w-0 flex-1 space-y-2">
+        <Skeleton className="h-5 w-32 bg-card" />
+        <Skeleton className="h-6 w-full bg-card" />
+      </div>
+    </CardContent>
+  </Card>
+);
+
 const CommentList = ({ commentsDB, roomId }: CommentListProps) => {
   const commentsCollection = commentsDB.collections.comments;
   const { data: rawComments, isLoading } = useLiveQuery({
@@ -36,9 +48,9 @@ const CommentList = ({ commentsDB, roomId }: CommentListProps) => {
   if (isLoading) {
     return (
       <>
-        <Skeleton className="h-[74px] mb-[24px] rounded-xl bg-card" />
-        <Skeleton className="h-[74px] mb-[24px] rounded-xl bg-card" />
-        <Skeleton className="h-[74px] mb-[24px] rounded-xl bg-card" />
+        <CommentSkeleton />
+        <CommentSkeleton />
+        <CommentSkeleton />
       </>
     );
   }
@@ -56,8 +68,8 @@ const CommentList = ({ commentsDB, roomId }: CommentListProps) => {
       <CardContent className="flex items-start gap-3">
         <Avatar name={comment.user} src={comment.authorImage} className="size-9 text-sm" />
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-1">
-            <div className="flex min-w-0 items-center gap-2 text-sm font-medium">
+          <div className="flex items-baseline justify-between gap-x-3">
+            <div className="flex min-w-0 flex-1 items-center gap-2 text-sm font-medium">
               <span className="truncate">{comment.user}</span>
               {comment.authorType === "guest" && (
                 <span className="text-xs font-normal text-muted-foreground">ゲスト</span>
@@ -68,7 +80,7 @@ const CommentList = ({ commentsDB, roomId }: CommentListProps) => {
             </div>
             <time
               dateTime={comment.createdAt.toISOString()}
-              className="text-xs text-muted-foreground"
+              className="shrink-0 whitespace-nowrap text-xs text-muted-foreground"
             >
               {comment.createdAt.toLocaleTimeString()}
             </time>
@@ -176,13 +188,13 @@ export default function RoomPage({ roomId, room, principal, canPost }: Props) {
               {room.visibility === "link" ? "リンクを知っている人" : "メンバー・ゲスト・管理者のみ"}
             </span>
             {principal != null && (
-              <span className="inline-flex items-center gap-2">
+              <span className="inline-flex max-w-full min-w-0 items-center gap-2">
                 <Avatar
                   name={principal.name}
                   src={principal.image}
                   className="size-6 text-[10px]"
                 />
-                <span>
+                <span className="min-w-0 truncate" title={principal.name}>
                   {principal.type === "guest"
                     ? "ゲスト"
                     : principal.isAdmin
@@ -265,9 +277,9 @@ export default function RoomPage({ roomId, room, principal, canPost }: Props) {
         {commentsDB == null || !isReady ? (
           error == null ? (
             <>
-              <Skeleton className="h-[74px] mb-[24px] rounded-xl bg-card" />
-              <Skeleton className="h-[74px] mb-[24px] rounded-xl bg-card" />
-              <Skeleton className="h-[74px] mb-[24px] rounded-xl bg-card" />
+              <CommentSkeleton />
+              <CommentSkeleton />
+              <CommentSkeleton />
             </>
           ) : null
         ) : (

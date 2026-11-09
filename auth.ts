@@ -1,6 +1,10 @@
 import { genericOAuth } from "better-auth/plugins";
 import { defineAuth } from "void/auth";
-import { normalizeProfileImage, stripProtectedUserFields } from "./src/server/authProfile";
+import {
+  isProtectedOnlyUpdate,
+  normalizeProfileImage,
+  stripProtectedUserFields,
+} from "./src/server/authProfile";
 import { installDiscoveryCache } from "./src/server/discoveryCache";
 import { sanitizeDisplayName } from "./src/server/displayName";
 
@@ -60,7 +64,7 @@ export default defineAuth(({ defaults, env, request }) => {
             const path = context?.path ?? "";
             const next = stripProtectedUserFields(user, path);
             if (next === user) return;
-            return { data: next };
+            return { data: isProtectedOnlyUpdate(user) ? { updatedAt: new Date() } : next };
           },
         },
       },
@@ -110,7 +114,7 @@ export default defineAuth(({ defaults, env, request }) => {
                 name,
                 username,
                 email,
-                image: normalizeProfileImage(profile.picture),
+                image: normalizeProfileImage(profile.picture, issuer),
                 isAdmin: groups.includes(adminGroup),
                 groups: JSON.stringify(groups),
               };

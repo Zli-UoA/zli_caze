@@ -1,6 +1,7 @@
 import { HTTPException } from "hono/http-exception";
 import type { CloudContext } from "void";
 import { getUser } from "void/auth";
+import { env } from "void/env";
 import { normalizeProfileImage } from "./authProfile";
 import { getDevUser } from "./devAuth";
 import { sanitizeDisplayName } from "./displayName";
@@ -22,7 +23,7 @@ export const getPrincipal = async (c: CloudContext): Promise<Principal | null> =
       type: "member",
       userId: user.id,
       name: user.name,
-      image: normalizeProfileImage(user.image) || null,
+      image: normalizeProfileImage(user.image, String(env.AUTHZ_ISSUER)) || null,
       isAdmin: user.isAdmin === true,
     };
   }

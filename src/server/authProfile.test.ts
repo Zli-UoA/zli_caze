@@ -1,9 +1,13 @@
 import { describe, expect, it } from "vite-plus/test";
 import {
   isOAuthCallbackPath,
+  isProtectedOnlyUpdate,
   normalizeProfileImage,
   stripProtectedUserFields,
 } from "./authProfile";
+
+const authzIssuer = "https://account.zli.works/api/auth";
+const avatarId = "2f1e0f8e-6a0d-4f3b-9f5a-1c2d3e4f5a6b";
 
 const profile = {
   name: "Member",
@@ -11,7 +15,7 @@ const profile = {
   username: "member",
   isAdmin: true,
   groups: '["zli-officers"]',
-  image: "https://avater.zliusercontent.com/avatars/2f1e0f8e-6a0d-4f3b-9f5a-1c2d3e4f5a6b.png",
+  image: `https://avater.zliusercontent.com/avatars/${avatarId}.png`,
 };
 
 describe("stripProtectedUserFields", () => {
@@ -49,21 +53,65 @@ describe("stripProtectedUserFields", () => {
 });
 
 describe("normalizeProfileImage", () => {
-  it("accepts http(s) avatar URLs", () => {
-    expect(normalizeProfileImage("https://avater.zliusercontent.com/avatars/a.png")).toBe(
-      "https://avater.zliusercontent.com/avatars/a.png",
-    );
-    expect(normalizeProfileImage("http://localhost:5173/api/avatars/a")).toBe(
-      "http://localhost:5173/api/avatars/a",
-    );
+  it("accepts the production CDN and the AuthZ dev avatar path", () => {
+    expect(
+      normalizeProfileImage(
+        `https://avater.zliusercontent.com/avatars/${avatarId}.png`,
+        authzIssuer,
+      ),
+    ).toBe(`https://avater.zliusercontent.com/avatars/${avatarId}.png`);
+    expect(
+      normalizeProfileImage(
+        `http://localhost:5173/api/avatars/${avatarId}`,
+        "http://localhost:5173/api/auth",
+      ),
+    ).toBe(`http://localhost:5173/api/avatars/${avatarId}`);
   });
 
   it("rejects missing, oversized, and non-http URLs", () => {
-    expect(normalizeProfileImage(undefined)).toBe("");
-    expect(normalizeProfileImage("")).toBe("");
-    expect(normalizeProfileImage("javascript:alert(1)")).toBe("");
-    expect(normalizeProfileImage("ftp://example.com/a.png")).toBe("");
-    expect(normalizeProfileImage(`https://example.com/${"a".repeat(2048)}`)).toBe("");
+    expect(normalizeProfileImage(undefined, authzIssuer)).toBe("");
+    expect(normalizeProfileImage("", authzIssuer)).toBe("");
+    expect(normalizeProfileImage("javascript:alert(1)", authzIssuer)).toBe("");
+    expect(normalizeProfileImage("ftp://example.com/a.png", authzIssuer)).toBe("");
+    expect(normalizeProfileImage(`https://example.com/${"a".repeat(2048)}`, authzIssuer)).toBe("");
+    expect(normalizeProfileImage("http://example.com/a.png", authzIssuer)).toBe("");
+    expect(normalizeProfileImage("https://user:pass@example.com/a.png", authzIssuer)).toBe("");
+  });
+
+  it("rejects untrusted hosts, paths, and extra URL components", () => {
+    expect(normalizeProfileImage(`https://example.com/avatars/${avatarId}.png`, authzIssuer)).toBe(
+      "",
+    );
+    expect(
+      normalizeProfileImage(`https://avater.zliusercontent.com/avatars/other.png`, authzIssuer),
+    ).toBe("");
+    expect(
+      normalizeProfileImage(
+        `https://avater.zliusercontent.com/avatars/${avatarId}.png?track=1`,
+        authzIssuer,
+      ),
+    ).toBe("");
+    expect(
+      normalizeProfileImage(
+        `https://avater.zliusercontent.com/avatars/${avatarId}.png#fragment`,
+        authzIssuer,
+      ),
+    ).toBe("");
+    expect(
+      normalizeProfileImage(
+        `http://localhost:5173/api/avatars/${avatarId}`,
+        "https://account.zli.works/api/auth",
+      ),
+    ).toBe("");
+  });
+});
+
+describe("isProtectedOnlyUpdate", () => {
+  it("detects requests containing only AuthZ-owned fields", () => {
+    expect(isProtectedOnlyUpdate({})).toBe(true);
+    expect(isProtectedOnlyUpdate({ name: undefined, image: undefined })).toBe(true);
+    expect(isProtectedOnlyUpdate({ image: "https://example.com/a.png" })).toBe(true);
+    expect(isProtectedOnlyUpdate({ name: "Member", email: "member@example.com" })).toBe(false);
   });
 });
 
@@ -73,5 +121,7 @@ describe("isOAuthCallbackPath", () => {
     expect(isOAuthCallbackPath("/callback/authz")).toBe(true);
     expect(isOAuthCallbackPath("/oauth2/callback/authz")).toBe(true);
     expect(isOAuthCallbackPath("/update-user")).toBe(false);
+    expect(isOAuthCallbackPath("/callback/other")).toBe(false);
+    expect(isOAuthCallbackPath("/callback/../update-user")).toBe(false);
   });
 });

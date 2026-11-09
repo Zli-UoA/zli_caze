@@ -7,30 +7,67 @@ export const PROTECTED_USER_FIELDS = [
   "image",
 ] as const;
 
+const PROTECTED_USER_FIELD_SET = new Set<string>(PROTECTED_USER_FIELDS);
+
 export const isOAuthCallbackPath = (path: string): boolean =>
-  path === "/callback/:id" || path.startsWith("/callback/") || path.startsWith("/oauth2/callback/");
+  path === "/callback/:id" ||
+  path === "/callback/authz" ||
+  path === "/oauth2/callback/:id" ||
+  path === "/oauth2/callback/authz";
+
+/** AuthZ's production image host. Dev builds use the AuthZ origin instead. */
+const AVATAR_PUBLIC_ORIGIN = "https://avater.zliusercontent.com";
+const AVATAR_ID = "[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}";
+const PUBLIC_AVATAR_PATH = new RegExp(`^/avatars/${AVATAR_ID}\\.png$`);
+const PROVIDER_AVATAR_PATH = new RegExp(`^/api/avatars/${AVATAR_ID}$`);
+
+const originOf = (value: string): string | null => {
+  try {
+    return new URL(value).origin;
+  } catch {
+    return null;
+  }
+};
 
 /**
- * AuthZ shares the profile icon as the OIDC `picture` claim. Only accept a
- * bounded http(s) URL; an empty string means the user has no icon and clears
- * any previously stored image on the next sign-in.
+ * AuthZ shares the profile icon as the OIDC `picture` claim. Only accept the
+ * production CDN path or the AuthZ origin's dev avatar path. An empty string
+ * means the user has no icon and clears any previously stored image on the
+ * next sign-in. Restricting the host also neutralizes arbitrary image URLs
+ * saved before `image` became a protected field.
  */
-export const normalizeProfileImage = (value: unknown): string => {
+export const normalizeProfileImage = (value: unknown, authzIssuer: string): string => {
   if (typeof value !== "string") return "";
   const trimmed = value.trim();
   if (trimmed === "" || trimmed.length > 2048) return "";
 
   try {
     const url = new URL(trimmed);
-    const isLocalHttp =
-      url.protocol === "http:" && (url.hostname === "localhost" || url.hostname === "127.0.0.1");
-    if (url.protocol !== "https:" && !isLocalHttp) return "";
     if (url.username !== "" || url.password !== "") return "";
+    if (url.search !== "" || url.hash !== "") return "";
+
+    const authzOrigin = originOf(authzIssuer);
+    const isPublicAvatar =
+      url.origin === AVATAR_PUBLIC_ORIGIN && PUBLIC_AVATAR_PATH.test(url.pathname);
+    const isProviderAvatar =
+      authzOrigin != null && url.origin === authzOrigin && PROVIDER_AVATAR_PATH.test(url.pathname);
+    if (!isPublicAvatar && !isProviderAvatar) return "";
+
     const normalized = url.toString();
     return normalized.length <= 2048 ? normalized : "";
   } catch {
     return "";
   }
+};
+
+/**
+ * `/update-user` may contain only AuthZ-owned fields. Treat that as a no-op
+ * instead of passing an all-undefined update to Drizzle, which throws
+ * "No values to set" and turns a blocked request into a 500.
+ */
+export const isProtectedOnlyUpdate = (user: Record<string, unknown>): boolean => {
+  const provided = Object.keys(user).filter((key) => user[key] !== undefined);
+  return provided.every((key) => PROTECTED_USER_FIELD_SET.has(key));
 };
 
 /**

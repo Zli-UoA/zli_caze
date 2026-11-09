@@ -8,7 +8,12 @@ export const comment = z.object({
   authorId: z.string().min(1).max(128),
   authorType: z.enum(["member", "guest", "admin"]),
   /** AuthZ profile icon snapshot. Absent on comments created before avatars. */
-  authorImage: z.string().max(2048).nullable().optional(),
+  authorImage: z
+    .string()
+    .max(2048)
+    .refine((value) => /^https?:\/\//i.test(value), "avatar URL must be http(s)")
+    .nullable()
+    .optional(),
   isOptimistic: z.boolean(),
 });
 export type Comment = z.infer<typeof comment>;
