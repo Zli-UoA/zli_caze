@@ -79,7 +79,7 @@ Do not delete the old `zli-caze` Worker before the new one is verified. Keep the
 
 ## Notes
 
-- `@tanstack/db` / `@tanstack/react-db` are pinned to `0.15.2` / `0.5.12`; StreamDB requires `@tanstack/db >=0.6 <1.0`. Upgrade both together.
+- `@tanstack/db` / `@tanstack/react-db` are pinned to `1.0.0-rc.1.4` and must be upgraded together. StreamDB 0.3.2 declares an optional peer of `@tanstack/db >=0.6 <1.0`; re-check that range whenever either package is updated.
 - `void prepare` generates `.void/` types. `.void/` and `.cloudflare/` are gitignored.
 - Pages live in `pages/`, API routes in `routes/`, and Durable Objects in `durable-objects/`.
 - Each room is one Durable Stream at `/streams/:roomId`. `routes/streams/[...path].ts` mounts the shared `createStreamsHandler()`, backed by `durable-objects/streams.ts` (`defineDurableObject`, binding `STREAMS`).
