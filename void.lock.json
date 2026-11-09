@@ -3,7 +3,15 @@
   "source": {
     "name": "zli-caze",
     "compatibility_date": "2026-02-24",
-    "compatibility_flags": ["nodejs_compat"]
+    "compatibility_flags": ["nodejs_compat"],
+    "workers_dev": true,
+    "preview_urls": true,
+    "routes": [
+      {
+        "pattern": "caze.zli.works",
+        "custom_domain": true
+      }
+    ]
   },
   "resolved": {
     "name": "zli-caze",
@@ -22,7 +30,15 @@
         "tag": "void-durable-streams-v1",
         "new_sqlite_classes": ["StreamsDurableObject"]
       }
+    ],
+    "workers_dev": true,
+    "preview_urls": true,
+    "routes": [
+      {
+        "pattern": "caze.zli.works",
+        "custom_domain": true
+      }
     ]
   },
-  "text": "{\n  \"name\": \"zli-caze\",\n  \"compatibility_date\": \"2026-02-24\",\n  \"compatibility_flags\": [\n    \"nodejs_compat\"\n  ],\n  \"durable_objects\": {\n    \"bindings\": [\n      {\n        \"name\": \"STREAMS\",\n        \"class_name\": \"StreamsDurableObject\"\n      }\n    ]\n  },\n  \"migrations\": [\n    {\n      \"tag\": \"void-durable-streams-v1\",\n      \"new_sqlite_classes\": [\n        \"StreamsDurableObject\"\n      ]\n    }\n  ]\n}\n"
+  "text": "{\n  \"name\": \"zli-caze\",\n  \"compatibility_date\": \"2026-02-24\",\n  \"compatibility_flags\": [\n    \"nodejs_compat\"\n  ],\n  \"durable_objects\": {\n    \"bindings\": [\n      {\n        \"name\": \"STREAMS\",\n        \"class_name\": \"StreamsDurableObject\"\n      }\n    ]\n  },\n  \"migrations\": [\n    {\n      \"tag\": \"void-durable-streams-v1\",\n      \"new_sqlite_classes\": [\n        \"StreamsDurableObject\"\n      ]\n    }\n  ],\n  \"workers_dev\": true,\n  \"preview_urls\": true,\n  \"routes\": [\n    {\n      \"pattern\": \"caze.zli.works\",\n      \"custom_domain\": true\n    }\n  ]\n}\n"
 }
