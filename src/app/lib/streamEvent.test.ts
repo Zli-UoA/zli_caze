@@ -74,12 +74,18 @@ describe("parseCommentEvent", () => {
     const result = parseCommentEvent(
       JSON.stringify({
         ...event,
-        value: { ...comment, authorId: "someone-else", authorType: "admin" },
+        value: {
+          ...comment,
+          authorId: "someone-else",
+          authorType: "admin",
+          authorImage: "https://evil.example/tracker.png",
+        },
       }),
     );
     expect(result.ok).toBe(true);
     if (!result.ok) return;
     expect(result.event.value).not.toHaveProperty("authorId");
     expect(result.event.value).not.toHaveProperty("authorType");
+    expect(result.event.value).not.toHaveProperty("authorImage");
   });
 });

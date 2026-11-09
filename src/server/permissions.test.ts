@@ -23,6 +23,7 @@ const member: MemberPrincipal = {
   type: "member",
   userId: "user-1",
   name: "Member",
+  image: null,
   isAdmin: false,
 };
 
@@ -34,6 +35,7 @@ const guest: GuestPrincipal = {
   inviteId: "invite-1",
   roomId: "room-1",
   name: "Guest",
+  image: null,
 };
 
 describe("canViewRoom", () => {
